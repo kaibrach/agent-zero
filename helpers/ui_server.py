@@ -54,13 +54,14 @@ class UiServerRuntime:
     ws_manager: WsManager
     lock: threading.RLock
     settings_snapshot: dict[str, Any]
+    ui_root: str = "webui"
     _routes_registered: bool = False
     _transport_registered: bool = False
     _route_handlers: "UiRouteHandlers | None" = field(default=None, init=False)
 
     @classmethod
-    def create(cls) -> "UiServerRuntime":
-        webapp = Flask("app", static_folder=get_abs_path("./webui"), static_url_path="/")
+    def create(cls, ui_root: str = "webui") -> "UiServerRuntime":
+        webapp = Flask("app", static_folder=get_abs_path(ui_root), static_url_path="/")
         webapp.secret_key = os.getenv("FLASK_SECRET_KEY") or secrets.token_hex(32)
 
         WerkzeugRequest.max_form_memory_size = UPLOAD_LIMIT_BYTES
@@ -99,6 +100,7 @@ class UiServerRuntime:
             ws_manager=ws_manager,
             lock=lock,
             settings_snapshot={},
+            ui_root=ui_root,
         )
         server_runtime.refresh_runtime_settings()
         return server_runtime
@@ -197,6 +199,16 @@ class UiRouteHandlers:
     def __init__(self, runtime_state: UiServerRuntime) -> None:
         self.runtime = runtime_state
 
+    def _ui_file(self, relative_path: str, *, fallback_to_legacy: bool = False) -> str:
+        candidate = files.get_abs_path(self.runtime.ui_root, relative_path)
+        if files.exists(candidate):
+            return candidate
+        if fallback_to_legacy:
+            legacy_candidate = files.get_abs_path("webui", relative_path)
+            if files.exists(legacy_candidate):
+                return legacy_candidate
+        return candidate
+
     @extensible
     async def login_handler(self):
         error = None
@@ -211,7 +223,9 @@ class UiRouteHandlers:
                 await asyncio.sleep(1)
                 error = "Invalid Credentials. Please try again."
 
-        login_page_content = files.read_file("webui/login.html")
+        login_page_content = files.read_file(
+            self._ui_file("login.html", fallback_to_legacy=True)
+        )
         return render_template_string(login_page_content, error=error)
 
     @extensible
@@ -230,7 +244,7 @@ class UiRouteHandlers:
                 "commit_time": "unknown",
             }
 
-        index = files.read_file("webui/index.html")
+        index = files.read_file(self._ui_file("index.html"))
         return files.replace_placeholders_text(
             _content=index,
             version_no=gitinfo["version"],

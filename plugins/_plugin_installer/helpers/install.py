@@ -4,7 +4,6 @@ from datetime import datetime, timezone
 import json
 import os
 import time
-from turtle import stamp
 import urllib.request
 import uuid
 import zipfile
@@ -82,8 +81,8 @@ def install_uploaded_zip(plugin_file: FileStorage) -> dict:
         temp_name = f"{temp_name}.zip"
 
     unique = uuid.uuid4().hex[:8]
-    stamp = time.strftime("%Y%m%d_%H%M%S")
-    tmp_path = str(tmp_dir / f"plugin_{stamp}_{unique}_{temp_name}")
+    timestamp = time.strftime("%Y%m%d_%H%M%S")
+    tmp_path = str(tmp_dir / f"plugin_{timestamp}_{unique}_{temp_name}")
     plugin_file.save(tmp_path)
 
     return install_from_zip(tmp_path, original_filename=original_filename)
