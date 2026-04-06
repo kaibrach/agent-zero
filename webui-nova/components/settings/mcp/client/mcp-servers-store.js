@@ -77,8 +77,12 @@ const model = {
   registryQuery: "",
   registryServers: [],
   registryMeta: null,
-  registryVersionMode: "latest",
+  registryIncludeAllVersions: false,
   registrySearchTimer: null,
+  registryDetailOpen: false,
+  registryDetailLoading: false,
+  registryDetailError: "",
+  registryDetail: null,
   serverLog: "",
   serverDetail: null,
   serverDetailError: "",
@@ -203,6 +207,7 @@ const model = {
       settingsStore.settings.mcp_servers = val;
     }
     this.stopStatusCheck();
+    this.closeRegistryDetail();
     if (this.registrySearchTimer) {
       clearTimeout(this.registrySearchTimer);
       this.registrySearchTimer = null;
@@ -421,7 +426,7 @@ const model = {
         action: "search",
         search: this.registryQuery.trim(),
         limit: 24,
-        version_mode: this.registryVersionMode,
+        version_mode: this.registryIncludeAllVersions ? "all" : "latest",
       });
       if (!resp.ok) {
         this.registryError = resp.error || "Failed to load MCP registry";
@@ -442,6 +447,91 @@ const model = {
     return this.installedServers.find((server) => server.registry_name === serverName || server.name === configName(serverName)) || null;
   },
 
+  installedRegistryVersion(serverName, version) {
+    return this.installedServers.find((server) => server.registry_name === serverName && server.registry_version === version) || null;
+  },
+
+  registryServerKey(server) {
+    return `${server?.name || "server"}:${server?.version || "latest"}`;
+  },
+
+  registryCards() {
+    const grouped = new Map();
+    for (const server of this.registryServers || []) {
+      const key = server?.name || this.registryServerKey(server);
+      if (!grouped.has(key)) {
+        grouped.set(key, {
+          key,
+          name: server?.name || "unknown",
+          title: server?.title || server?.name || "Unknown server",
+          description: server?.description || "No description provided.",
+          repository: server?.repository || {},
+          websiteUrl: server?.websiteUrl || "",
+          status: server?.status || "",
+          versions: [],
+        });
+      }
+
+      const card = grouped.get(key);
+      if (!card.description && server?.description) card.description = server.description;
+      if (!card.repository?.url && server?.repository?.url) card.repository = server.repository;
+      if (!card.websiteUrl && server?.websiteUrl) card.websiteUrl = server.websiteUrl;
+      if (!card.status && server?.status) card.status = server.status;
+      card.versions.push(server);
+    }
+
+    return Array.from(grouped.values())
+      .map((card) => ({
+        ...card,
+        hasRemote: card.versions.some((version) => Array.isArray(version?.remotes) && version.remotes.length > 0),
+        hasPackage: card.versions.some((version) => Array.isArray(version?.packages) && version.packages.length > 0),
+        versions: [...card.versions].sort((left, right) => {
+          const latestDiff = Number(Boolean(right?.isLatest)) - Number(Boolean(left?.isLatest));
+          if (latestDiff !== 0) return latestDiff;
+          return String(right?.version || "").localeCompare(String(left?.version || ""), undefined, {
+            numeric: true,
+            sensitivity: "base",
+          });
+        }),
+      }))
+      .sort((left, right) => String(left.title || left.name).localeCompare(String(right.title || right.name)));
+  },
+
+  async openRegistryDetail(serverName, version = "latest") {
+    try {
+      this.registryDetailOpen = true;
+      this.registryDetailLoading = true;
+      this.registryDetailError = "";
+      this.registryDetail = null;
+
+      const resp = await API.callJsonApi("mcp_registry", {
+        action: "detail",
+        server_name: serverName,
+        version,
+      });
+      if (!resp.ok) {
+        throw new Error(resp.error || "Failed to load MCP registry server details");
+      }
+
+      this.registryDetail = resp.data || null;
+    } catch (error) {
+      this.registryDetailError = error?.message || "Failed to load MCP registry server details";
+    } finally {
+      this.registryDetailLoading = false;
+    }
+  },
+
+  closeRegistryDetail() {
+    this.registryDetailOpen = false;
+    this.registryDetailLoading = false;
+    this.registryDetailError = "";
+    this.registryDetail = null;
+  },
+
+  registryDetailJson() {
+    return this.registryDetail ? JSON.stringify(this.registryDetail, null, 2) : "";
+  },
+
   isRegistryUpdateAvailable(server) {
     return Boolean(server?.registry_name && server?.registry_version && server?.registry_version !== "latest");
   },
@@ -456,8 +546,9 @@ const model = {
     return `${baseName}-${index}`;
   },
 
-  async openInstallDialog(serverName) {
+  async openInstallDialog(serverName, version = "latest") {
     try {
+      this.closeRegistryDetail();
       this.installDialogOpen = true;
       this.installDialogLoading = true;
       this.installDialogError = "";
@@ -469,6 +560,7 @@ const model = {
       const resp = await API.callJsonApi("mcp_registry", {
         action: "detail",
         server_name: serverName,
+        version,
       });
       if (!resp.ok) {
         throw new Error(resp.error || "Failed to load MCP registry server");
