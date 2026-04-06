@@ -4,35 +4,97 @@
   </head>
 
   <body>
-    <div x-data>
+    <div x-data="{ activeTab: 'installed' }">
       <template x-if="$store.settings">
         <div>
-          <nav>
-            <ul>
-              <li>
-                <a href="#section-skills-list">
-                  <img src="/public/skills.svg" alt="Skills" />
-                  <span>List Skills</span>
-                </a>
-              </li>
-              <li>
-                <a href="#section-skills-import">
-                  <img src="/public/skills_add.svg" alt="Skills" />
-                  <span>Import Skills</span>
-                </a>
-              </li>
-            </ul>
-          </nav>
+          <ul class="nav nav-tabs" id="skills-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link"
+                :class="{ active: activeTab === 'installed' }"
+                id="skills-installed-tab"
+                type="button"
+                role="tab"
+                aria-controls="skills-installed"
+                :aria-selected="activeTab === 'installed'"
+                @click="activeTab = 'installed'">
+                <span class="material-symbols-outlined skills-tab-icon">inventory_2</span> Installed
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link"
+                :class="{ active: activeTab === 'browse' }"
+                id="skills-browse-tab"
+                type="button"
+                role="tab"
+                aria-controls="skills-browse"
+                :aria-selected="activeTab === 'browse'"
+                @click="activeTab = 'browse'">
+                <span class="material-symbols-outlined skills-tab-icon">storefront</span> Browse
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link"
+                :class="{ active: activeTab === 'import' }"
+                id="skills-import-tab"
+                type="button"
+                role="tab"
+                aria-controls="skills-import"
+                :aria-selected="activeTab === 'import'"
+                @click="activeTab = 'import'">
+                <span class="material-symbols-outlined skills-tab-icon">upload_file</span> Import
+              </button>
+            </li>
+          </ul>
 
-          <div id="section-skills-list" class="section">
+          <template x-if="activeTab === 'installed'">
             <x-component path="settings/skills/list.html"></x-component>
-          </div>
+          </template>
 
-          <div id="section-skills-import" class="section">
+          <template x-if="activeTab === 'browse'">
+            <x-component path="settings/skills/browse.html"></x-component>
+          </template>
+
+          <template x-if="activeTab === 'import'">
             <x-component path="settings/skills/import.html"></x-component>
-          </div>
+          </template>
         </div>
       </template>
     </div>
+
+    <style>
+      .nav {
+        display: flex;
+        padding-left: 0;
+        margin: 0 0 1rem 0;
+        list-style: none;
+        border-bottom: 1px solid var(--color-border);
+        gap: 0.25rem;
+      }
+
+      .nav-link {
+        font-family: var(--font-family-body);
+        border: 1px solid transparent;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        padding: 0.4rem 0.7rem;
+        background: transparent;
+        color: var(--color-text-secondary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.3rem;
+      }
+
+      .nav-link.active {
+        color: var(--color-text-primary);
+        border-color: var(--color-border);
+        border-bottom-color: transparent;
+        background: var(--color-background);
+      }
+
+      .skills-tab-icon {
+        font-size: 1.1rem;
+      }
+    </style>
   </body>
 </html>

@@ -8,11 +8,11 @@
 <body>
     <div x-data>
         <template x-if="$store.skillsListStore">
-            <div x-init="$store.skillsListStore.init()" x-destroy="$store.skillsListStore.onClose()">
+            <div x-init="$store.skillsListStore.init('installed')" x-destroy="$store.skillsListStore.onClose()">
 
-                <div class="section-title">List Skills</div>
+                <div class="section-title">Installed Skills</div>
                 <div class="section-description">
-                    Browse installed skills and search agentskill.sh using the current project and agent scope.
+                    Review and manage installed skills across global, project, and agent-profile scopes.
                 </div>
 
                 <div class="skills-toolbar">
@@ -56,8 +56,6 @@
                 <div x-show="$store.skillsListStore.error" class="error">
                     <span x-text="$store.skillsListStore.error"></span>
                 </div>
-
-                <div class="section-subtitle">Installed</div>
 
                 <template
                     x-if="!$store.skillsListStore.loading && !$store.skillsListStore.error && $store.skillsListStore.skills.length === 0">
@@ -106,90 +104,6 @@
                     </template>
                 </div>
 
-                <div class="section-subtitle section-subtitle-spaced">Discover From agentskill.sh</div>
-                <div class="section-description">
-                    Search the public registry and install skills into the selected project and agent scope.
-                </div>
-
-                <div class="skills-toolbar registry-toolbar">
-                    <div class="skills-toolbar-row">
-                        <label class="skills-toolbar-item registry-search-item">
-                            <span class="skills-toolbar-label">Search</span>
-                            <input type="text" x-model="$store.skillsListStore.registryQuery"
-                                @input="$store.skillsListStore.scheduleRegistrySearch()"
-                                placeholder="Search skills, owners, or topics" />
-                        </label>
-
-                        <div class="skills-toolbar-actions">
-                            <button type="button" class="button" title="Search registry"
-                                @click="$store.skillsListStore.loadRegistrySkills()"
-                                :disabled="$store.skillsListStore.registryLoading">
-                                <span class="icon material-symbols-outlined">search</span>
-                                <span x-text="$store.skillsListStore.registryLoading ? 'Searching...' : 'Search'"></span>
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <div x-show="$store.skillsListStore.registryError" class="error">
-                    <span x-text="$store.skillsListStore.registryError"></span>
-                </div>
-
-                <template
-                    x-if="!$store.skillsListStore.registryLoading && !$store.skillsListStore.registryError && $store.skillsListStore.registrySkills.length === 0">
-                    <div class="skills-empty">No registry skills found.</div>
-                </template>
-
-                <div x-show="$store.skillsListStore.registryLoading" class="loading">
-                    <span>Loading registry skills...</span>
-                </div>
-
-                <div class="skills-list">
-                    <template x-for="skill in $store.skillsListStore.registrySkills"
-                        :key="$store.skillsListStore.registrySkillKey(skill)">
-                        <div class="skill-card">
-                            <div class="skill-header">
-                                <div class="skill-heading">
-                                    <div class="skill-title" x-text="skill.name || skill.slug || '(unnamed skill)'"></div>
-                                    <div class="skill-badges">
-                                        <span class="skill-badge skill-badge-registry"
-                                            x-text="`${skill.owner}/${skill.slug}`"></span>
-                                        <template x-if="skill.category">
-                                            <span class="skill-badge" x-text="skill.category"></span>
-                                        </template>
-                                    </div>
-                                </div>
-                                <div class="skill-actions">
-                                    <template x-if="$store.skillsListStore.installedRegistrySkill(skill)">
-                                        <button type="button" class="button" title="Update installed skill"
-                                            @click="$store.skillsListStore.updateSkill($store.skillsListStore.installedRegistrySkill(skill))"
-                                            :disabled="$store.skillsListStore.busyKey === `update:${$store.skillsListStore.installedRegistrySkill(skill)?.path || ''}`">
-                                            <span class="icon material-symbols-outlined">system_update</span>
-                                            <span x-text="$store.skillsListStore.busyKey === `update:${$store.skillsListStore.installedRegistrySkill(skill)?.path || ''}` ? 'Updating...' : 'Update'"></span>
-                                        </button>
-                                    </template>
-                                    <button type="button" class="button confirm" title="Install skill"
-                                        @click="$store.skillsListStore.installRegistrySkill(skill)"
-                                        :disabled="$store.skillsListStore.isRegistryInstalled(skill) || $store.skillsListStore.busyKey === `install:${$store.skillsListStore.registrySkillKey(skill)}`">
-                                        <span class="icon material-symbols-outlined"
-                                            x-text="$store.skillsListStore.isRegistryInstalled(skill) ? 'check_circle' : 'download'"></span>
-                                        <span x-text="$store.skillsListStore.busyKey === `install:${$store.skillsListStore.registrySkillKey(skill)}` ? 'Installing...' : ($store.skillsListStore.isRegistryInstalled(skill) ? 'Installed' : 'Install')"></span>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="skill-description"
-                                x-text="skill.description || skill.summary || 'No description provided.'"></div>
-                            <template x-if="skill.tags && skill.tags.length">
-                                <div class="skill-tags">
-                                    <template x-for="tag in skill.tags" :key="tag">
-                                        <span class="skill-tag" x-text="tag"></span>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                    </template>
-                </div>
-
             </div>
         </template>
     </div>
@@ -232,20 +146,6 @@
         .skills-toolbar-actions {
             margin-left: auto;
             flex: 0 0 auto;
-        }
-
-        .registry-search-item {
-            flex: 1 1 26rem;
-        }
-
-        .section-subtitle {
-            margin-top: 1rem;
-            font-weight: 700;
-            color: var(--color-text-primary);
-        }
-
-        .section-subtitle-spaced {
-            margin-top: 1.5rem;
         }
 
         @media (max-width: 640px) {
@@ -321,16 +221,14 @@
             font-size: var(--font-size-small);
         }
 
-        .skill-badges,
-        .skill-tags {
+        .skill-badges {
             display: flex;
             flex-wrap: wrap;
             gap: 0.4rem;
             margin-top: 0.5rem;
         }
 
-        .skill-badge,
-        .skill-tag {
+        .skill-badge {
             display: inline-flex;
             align-items: center;
             padding: 0.15rem 0.45rem;

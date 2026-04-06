@@ -4,7 +4,16 @@ import { store as fileBrowserStore } from "/components/modals/file-browser/file-
 
 const fetchApi = globalThis.fetchApi;
 
+function sanitizeNamespace(text) {
+  if (!text) return "";
+  return String(text)
+    .trim()
+    .replace(/[^a-zA-Z0-9._-]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+}
+
 const model = {
+  mode: "installed",
   loading: false,
   error: "",
   skills: [],
@@ -17,12 +26,24 @@ const model = {
   projectName: "",
   agentProfiles: [],
   agentProfileKey: "",
+  installDialogOpen: false,
+  installSkill: null,
+  installError: "",
+  installNamespace: "",
+  installConflict: "skip",
+  installProjectName: "",
+  installAgentProfileKey: "",
   registrySearchTimer: null,
 
-  async init() {
+  async init(mode = "installed") {
     this.resetState();
+    this.mode = mode || "installed";
     await Promise.all([this.loadProjects(), this.loadAgentProfiles()]);
-    await Promise.all([this.loadSkills(), this.loadRegistrySkills()]);
+    if (this.mode === "browse") {
+      await Promise.all([this.loadSkills(), this.loadRegistrySkills()]);
+      return;
+    }
+    await this.loadSkills();
   },
 
   resetState() {
@@ -38,6 +59,13 @@ const model = {
     this.projectName = "";
     this.agentProfiles = [];
     this.agentProfileKey = "";
+    this.installDialogOpen = false;
+    this.installSkill = null;
+    this.installError = "";
+    this.installNamespace = "";
+    this.installConflict = "skip";
+    this.installProjectName = "";
+    this.installAgentProfileKey = "";
   },
 
   onClose() {
@@ -171,12 +199,60 @@ const model = {
     return `${owner}/${slug}`;
   },
 
+  defaultNamespaceForSkill(skill) {
+    return sanitizeNamespace(skill?.owner || "");
+  },
+
+  openInstallDialog(skill) {
+    if (!skill?.owner || !skill?.slug) return;
+    this.installSkill = skill;
+    this.installDialogOpen = true;
+    this.installError = "";
+    this.installNamespace = this.defaultNamespaceForSkill(skill);
+    this.installConflict = "skip";
+    this.installProjectName = this.projectName || "";
+    this.installAgentProfileKey = this.agentProfileKey || "";
+  },
+
+  closeInstallDialog() {
+    this.installDialogOpen = false;
+    this.installSkill = null;
+    this.installError = "";
+    this.installNamespace = "";
+    this.installConflict = "skip";
+    this.installProjectName = "";
+    this.installAgentProfileKey = "";
+  },
+
+  installDestinationPreview() {
+    if (!this.installSkill?.slug) return "";
+    const segments = [];
+    if (this.installProjectName) {
+      segments.push(`project:${this.installProjectName}`);
+    } else if (this.installAgentProfileKey) {
+      segments.push(`profile:${this.installAgentProfileKey}`);
+    } else {
+      segments.push("global");
+    }
+    if (this.installProjectName && this.installAgentProfileKey) {
+      segments.push(`profile:${this.installAgentProfileKey}`);
+    }
+    if (this.installNamespace) {
+      segments.push(this.installNamespace);
+    }
+    segments.push(this.installSkill.slug);
+    return segments.join(" / ");
+  },
+
   async installRegistrySkill(skill) {
     if (!skill?.owner || !skill?.slug) return;
 
     const busyKey = `install:${this.registrySkillKey(skill)}`;
     try {
       this.busyKey = busyKey;
+      this.installError = "";
+      this.projectName = this.installProjectName || "";
+      this.agentProfileKey = this.installAgentProfileKey || "";
       const response = await fetchApi("/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -186,6 +262,8 @@ const model = {
           slug: skill.slug,
           project_name: this.projectName || null,
           agent_profile: this.agentProfileKey || null,
+          namespace: sanitizeNamespace(this.installNamespace) || null,
+          conflict: this.installConflict || "skip",
         }),
       });
       const result = await response.json().catch(() => ({}));
@@ -197,8 +275,10 @@ const model = {
         window.toastFrontendSuccess(`Installed ${skill.slug}`, "Skills");
       }
       await this.loadSkills();
+      this.closeInstallDialog();
     } catch (e) {
       const msg = e?.message || "Install failed";
+      this.installError = msg;
       if (window.toastFrontendError) {
         window.toastFrontendError(msg, "Skills");
       }

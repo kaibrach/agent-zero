@@ -1,4 +1,6 @@
 import json
+import re
+import shutil
 from pathlib import Path
 from urllib.parse import quote, quote_plus
 
@@ -120,6 +122,8 @@ class Skills(ApiHandler):
         update = bool(input.get("update", False))
         project_name = (str(input.get("project_name") or "").strip() or None)
         agent_profile = (str(input.get("agent_profile") or "").strip() or None)
+        namespace = self._sanitize_namespace(input.get("namespace"))
+        conflict = self._sanitize_conflict(input.get("conflict"))
         if not owner or not slug:
             raise Exception("owner and slug are required")
 
@@ -133,24 +137,22 @@ class Skills(ApiHandler):
         if not isinstance(content, str) or not content.strip():
             raise Exception("Registry did not return SKILL.md content")
 
-        skill_dir = Path(resolve_skills_destination_root(project_name, agent_profile)) / slug
-        skill_dir.mkdir(parents=True, exist_ok=True)
-        skill_md = skill_dir / "SKILL.md"
+        skill_dir = self._resolve_registry_install_dir(
+            slug=slug,
+            project_name=project_name,
+            agent_profile=agent_profile,
+            namespace=namespace,
+            conflict=conflict,
+            update=update,
+        )
 
-        if skill_md.exists() and not update:
-            raise Exception(f"Skill already exists: {slug}")
-
-        skill_md.write_text(content, encoding="utf-8")
-        self._write_registry_meta(
-            skill_dir,
-            {
-                "owner": owner,
-                "slug": slug,
-                "registry_slug": registry_slug,
-                "contentSha": payload.get("contentSha") if isinstance(payload, dict) else None,
-                "updatedAt": payload.get("updatedAt") if isinstance(payload, dict) else None,
-                "source": "agentskill.sh",
-            },
+        self._write_registry_skill(
+            skill_dir=skill_dir,
+            content=content,
+            owner=owner,
+            slug=slug,
+            registry_slug=registry_slug,
+            payload=payload if isinstance(payload, dict) else {},
         )
 
         return {
@@ -159,6 +161,8 @@ class Skills(ApiHandler):
             "path": str(skill_dir),
             "project_name": project_name,
             "agent_profile": agent_profile,
+            "namespace": namespace,
+            "conflict": conflict,
         }
 
     def registry_update(self, input: Input):
@@ -175,7 +179,26 @@ class Skills(ApiHandler):
         if not owner or not slug:
             raise Exception("Registry metadata is incomplete")
 
-        return self.registry_install({"owner": owner, "slug": slug, "update": True})
+        registry_slug = self._registry_slug(owner, slug)
+        payload = self._fetch_json(
+            REGISTRY_INSTALL_URL.format(slug=quote(registry_slug, safe=""))
+        )
+        content = payload.get("skillMd") if isinstance(payload, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            content = payload.get("content") if isinstance(payload, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            raise Exception("Registry did not return SKILL.md content")
+
+        skill_dir = Path(skill_path)
+        self._write_registry_skill(
+            skill_dir=skill_dir,
+            content=content,
+            owner=owner,
+            slug=slug,
+            registry_slug=registry_slug,
+            payload=payload if isinstance(payload, dict) else {},
+        )
+        return {"ok": True, "name": slug, "path": str(skill_dir)}
 
     def _fetch_json(self, url: str):
         try:
@@ -196,6 +219,79 @@ class Skills(ApiHandler):
         if "/" in slug:
             return slug.lstrip("@")
         return f"{owner}/{slug}".lstrip("@")
+
+    def _sanitize_namespace(self, namespace: object) -> str | None:
+        value = str(namespace or "").strip()
+        if not value:
+            return None
+        value = re.sub(r"[^a-zA-Z0-9._-]+", "_", value).strip("_")
+        return value or None
+
+    def _sanitize_conflict(self, conflict: object) -> str:
+        value = str(conflict or "skip").strip().lower()
+        if value not in {"skip", "overwrite", "rename"}:
+            return "skip"
+        return value
+
+    def _resolve_registry_install_dir(
+        self,
+        *,
+        slug: str,
+        project_name: str | None,
+        agent_profile: str | None,
+        namespace: str | None,
+        conflict: str,
+        update: bool,
+    ) -> Path:
+        base_dir = Path(resolve_skills_destination_root(project_name, agent_profile))
+        if namespace:
+            base_dir = base_dir / namespace
+
+        skill_dir = base_dir / slug
+        if update:
+            return skill_dir
+
+        if not skill_dir.exists():
+            return skill_dir
+
+        if conflict == "overwrite":
+            shutil.rmtree(skill_dir)
+            return skill_dir
+
+        if conflict == "rename":
+            suffix = 2
+            while True:
+                candidate = skill_dir.with_name(f"{skill_dir.name}_{suffix}")
+                if not candidate.exists():
+                    return candidate
+                suffix += 1
+
+        raise Exception(f"Skill already exists: {skill_dir.name}")
+
+    def _write_registry_skill(
+        self,
+        *,
+        skill_dir: Path,
+        content: str,
+        owner: str,
+        slug: str,
+        registry_slug: str,
+        payload: dict,
+    ):
+        skill_dir.mkdir(parents=True, exist_ok=True)
+        skill_md = skill_dir / "SKILL.md"
+        skill_md.write_text(content, encoding="utf-8")
+        self._write_registry_meta(
+            skill_dir,
+            {
+                "owner": owner,
+                "slug": slug,
+                "registry_slug": registry_slug,
+                "contentSha": payload.get("contentSha"),
+                "updatedAt": payload.get("updatedAt"),
+                "source": "agentskill.sh",
+            },
+        )
 
     def _registry_error_message(self, response: requests.Response | None) -> str:
         if response is None:
