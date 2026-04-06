@@ -73,12 +73,18 @@
                                             </div>
                                         </div>
                                         <div class="server-card-actions">
-                                            <select class="server-toggle"
-                                                :value="server.disabled ? 'disabled' : 'enabled'"
-                                                @change="$store.mcpServersStore.setServerEnabled(server.name, $event.target.value === 'enabled')">
-                                                <option value="enabled">ON</option>
-                                                <option value="disabled">OFF</option>
-                                            </select>
+                                            <label class="switch-toggle" :class="server.disabled ? 'is-off' : 'is-on'">
+                                                <input type="checkbox"
+                                                    :checked="!server.disabled"
+                                                    @change="$store.mcpServersStore.setServerEnabled(server.name, $event.target.checked)" />
+                                                <span class="switch-track" aria-hidden="true">
+                                                    <span class="switch-thumb"></span>
+                                                </span>
+                                                <span class="switch-copy">
+                                                    <span class="switch-label">Server</span>
+                                                    <span class="switch-state" x-text="server.disabled ? 'OFF' : 'ON'"></span>
+                                                </span>
+                                            </label>
                                             <button class="button" :disabled="server.disabled || server.total_tool_count === 0"
                                                 @click="$store.mcpServersStore.onToolCountClick(server.runtime_name)">
                                                 <span class="icon material-symbols-outlined">build_circle</span>
@@ -348,7 +354,6 @@
 
         .search-input,
         .text-input,
-        .server-toggle,
         .version-select {
             width: 100%;
             padding: 0.45rem 0.7rem;
@@ -428,6 +433,100 @@
             flex-wrap: wrap;
             gap: 0.5rem;
             justify-content: flex-end;
+        }
+
+        .switch-toggle {
+            --switch-track: color-mix(in srgb, var(--color-bg-secondary) 82%, transparent);
+            --switch-border: color-mix(in srgb, var(--color-border) 78%, transparent);
+            --switch-copy: var(--color-text-secondary);
+            --switch-glow: rgba(43, 138, 87, 0.22);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-height: 2.75rem;
+            padding: 0.35rem 0.5rem 0.35rem 0.35rem;
+            border-radius: 999px;
+            border: 1px solid var(--switch-border);
+            background: linear-gradient(180deg, color-mix(in srgb, var(--color-background) 88%, white 12%), var(--color-background));
+            box-shadow: 0 10px 24px rgba(3, 10, 18, 0.08);
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .switch-toggle input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .switch-track {
+            position: relative;
+            display: inline-flex;
+            align-items: center;
+            width: 3.3rem;
+            height: 1.9rem;
+            border-radius: 999px;
+            background: var(--switch-track);
+            border: 1px solid var(--switch-border);
+            transition: background 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18);
+        }
+
+        .switch-thumb {
+            position: absolute;
+            top: 0.15rem;
+            left: 0.15rem;
+            width: 1.45rem;
+            height: 1.45rem;
+            border-radius: 999px;
+            background: linear-gradient(180deg, #ffffff, #dfe9f1);
+            box-shadow: 0 4px 10px rgba(3, 10, 18, 0.2);
+            transition: transform 180ms ease;
+        }
+
+        .switch-copy {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-start;
+            line-height: 1.1;
+        }
+
+        .switch-label {
+            font-size: 0.68rem;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--switch-copy);
+        }
+
+        .switch-state {
+            font-size: 0.83rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .switch-toggle.is-on {
+            --switch-track: linear-gradient(135deg, color-mix(in srgb, var(--color-secondary) 84%, #2b8a57 16%), #2b8a57);
+            --switch-border: color-mix(in srgb, var(--color-secondary) 38%, var(--color-border));
+            --switch-copy: color-mix(in srgb, var(--color-secondary) 56%, var(--color-text-secondary));
+        }
+
+        .switch-toggle.is-on .switch-track {
+            box-shadow: 0 0 0 4px var(--switch-glow);
+        }
+
+        .switch-toggle.is-on .switch-thumb {
+            transform: translateX(1.36rem);
+        }
+
+        .switch-toggle.is-off {
+            --switch-track: linear-gradient(135deg, color-mix(in srgb, var(--color-bg-secondary) 86%, #c4d0d9 14%), color-mix(in srgb, var(--color-bg-secondary) 94%, transparent));
+            --switch-border: color-mix(in srgb, var(--color-border) 84%, transparent);
+            --switch-copy: var(--color-text-secondary);
+        }
+
+        .switch-toggle:focus-within {
+            outline: 2px solid color-mix(in srgb, var(--color-secondary) 55%, transparent);
+            outline-offset: 2px;
         }
 
         .server-card-description {
@@ -635,6 +734,7 @@
                 justify-content: stretch;
             }
 
+            .switch-toggle,
             .server-card-actions .button,
             .toolbar-row .button,
             .toolbar-row .search-input,
