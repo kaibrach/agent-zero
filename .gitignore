@@ -50,3 +50,7 @@ agent_history.gif
 
 .agent/**
 .claude/**
+.agents/**
+webui-nova-old/**
+plugins-nova/**
+run_nova_old.py
