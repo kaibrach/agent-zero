@@ -17,13 +17,20 @@ function safeSlug(text) {
     .replace(/^-+|-+$/g, "");
 }
 
+function normalizeServerName(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w]/g, "_");
+}
+
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
 function configName(serverName) {
   const parts = String(serverName || "").split("/");
-  return safeSlug(parts[parts.length - 1] || serverName || "mcp-server") || "mcp-server";
+  return normalizeServerName(parts[parts.length - 1] || serverName || "mcp-server") || "mcp_server";
 }
 
 function ensureNamedFlag(name) {
@@ -70,6 +77,7 @@ const model = {
   registryQuery: "",
   registryServers: [],
   registryMeta: null,
+  registryVersionMode: "latest",
   registrySearchTimer: null,
   serverLog: "",
   serverDetail: null,
@@ -150,10 +158,12 @@ const model = {
     const names = Object.keys(configMap).sort((a, b) => a.localeCompare(b));
     this.installedServers = names.map((name) => {
       const config = deepClone(configMap[name] || {});
-      const status = this.statusByName[name] || {};
+      const runtimeName = normalizeServerName(name);
+      const status = this.statusByName[runtimeName] || this.statusByName[name] || {};
       const disabledTools = Array.isArray(config.disabled_tools) ? config.disabled_tools : [];
       return {
         name,
+        runtime_name: runtimeName,
         config,
         description: config.description || status.description || "No description provided.",
         type: config.type || (config.url ? "streamable-http" : "stdio"),
@@ -165,6 +175,7 @@ const model = {
         error: status.error || "",
         has_log: Boolean(status.has_log),
         registry_name: config.registry_name || "",
+        registry_version: config.registry_version || "",
       };
     });
   },
@@ -281,7 +292,8 @@ const model = {
 
   async setToolEnabled(serverName, toolName, enabled) {
     const next = this.parseConfigObject();
-    const config = next.mcpServers?.[serverName];
+    const configKey = this.findConfigKey(serverName);
+    const config = next.mcpServers?.[configKey];
     if (!config) return;
     const disabledTools = new Set(Array.isArray(config.disabled_tools) ? config.disabled_tools : []);
     if (enabled) {
@@ -297,7 +309,7 @@ const model = {
     }
     this.setConfigObject(next);
     await this.applyNow();
-    if (this.serverDetail?.name === serverName) {
+    if (this.serverDetail?.name === serverName || this.serverDetail?.runtime_name === serverName) {
       this.serverDetail.disabled_tools = nextDisabled;
       this.serverDetail.tools = (this.serverDetail.tools || []).map((tool) => ({
         ...tool,
@@ -306,9 +318,18 @@ const model = {
     }
   },
 
+  findInstalledServer(serverName) {
+    return this.installedServers.find((server) => server.name === serverName || server.runtime_name === serverName) || null;
+  },
+
+  findConfigKey(serverName) {
+    return this.findInstalledServer(serverName)?.name || serverName;
+  },
+
   async getServerLog(serverName) {
     this.serverLog = "";
-    const resp = await API.callJsonApi("mcp_server_get_log", { server_name: serverName });
+    const runtimeName = this.findInstalledServer(serverName)?.runtime_name || serverName;
+    const resp = await API.callJsonApi("mcp_server_get_log", { server_name: runtimeName });
     if (resp.success) {
       this.serverLog = resp.log;
       openModal("settings/mcp/client/mcp-servers-log.html");
@@ -316,9 +337,15 @@ const model = {
   },
 
   async onToolCountClick(serverName) {
-    const resp = await API.callJsonApi("mcp_server_get_detail", { server_name: serverName });
+    const installed = this.findInstalledServer(serverName);
+    const runtimeName = installed?.runtime_name || serverName;
+    const resp = await API.callJsonApi("mcp_server_get_detail", { server_name: runtimeName });
     if (resp.success) {
-      this.serverDetail = resp.detail;
+      this.serverDetail = {
+        ...resp.detail,
+        runtime_name: runtimeName,
+        config_name: installed?.name || serverName,
+      };
       openModal("settings/mcp/client/mcp-server-tools.html");
     }
   },
@@ -339,6 +366,7 @@ const model = {
         action: "search",
         search: this.registryQuery.trim(),
         limit: 24,
+        version_mode: this.registryVersionMode,
       });
       if (!resp.ok) {
         this.registryError = resp.error || "Failed to load MCP registry";
@@ -357,6 +385,10 @@ const model = {
 
   installedRegistryServer(serverName) {
     return this.installedServers.find((server) => server.registry_name === serverName || server.name === configName(serverName)) || null;
+  },
+
+  isRegistryUpdateAvailable(server) {
+    return Boolean(server?.registry_name && server?.registry_version && server?.registry_version !== "latest");
   },
 
   nextAvailableServerName(baseName) {
@@ -570,6 +602,8 @@ const model = {
       registry_name: detail.name,
       registry_version: detail.version,
       registry_source: "official-mcp-registry",
+      registry_option_key: option.key,
+      registry_install_inputs: deepClone(values),
     };
     if (!config.headers) delete config.headers;
     return config;
@@ -598,6 +632,8 @@ const model = {
       registry_name: detail.name,
       registry_version: detail.version,
       registry_source: "official-mcp-registry",
+      registry_option_key: option.key,
+      registry_install_inputs: deepClone(this.installInputValues),
     };
     if (!config.env) delete config.env;
     return config;
@@ -692,6 +728,58 @@ const model = {
       this.closeInstallDialog();
     } catch (error) {
       this.installDialogError = error?.message || "Failed to install MCP server";
+    }
+  },
+
+  async updateRegistryServer(serverName) {
+    const installed = this.findInstalledServer(serverName);
+    if (!installed?.registry_name) return;
+
+    try {
+      const detailResp = await API.callJsonApi("mcp_registry", {
+        action: "detail",
+        server_name: installed.registry_name,
+        version: "latest",
+      });
+      if (!detailResp.ok) {
+        throw new Error(detailResp.error || "Failed to load latest MCP registry version");
+      }
+
+      const detail = detailResp.data || {};
+      if ((detail.version || "") === (installed.registry_version || "")) {
+        if (window.toastFrontendInfo) {
+          window.toastFrontendInfo(`${installed.name} is already on the latest version`, "MCP Registry");
+        }
+        return;
+      }
+
+      const optionKey = installed.config.registry_option_key || "";
+      const options = this.buildInstallOptions(detail);
+      const option = options.find((item) => item.key === optionKey) || options.find((item) => item.supported);
+      if (!option) {
+        throw new Error("No compatible install option found for this MCP server");
+      }
+
+      this.installInputValues = deepClone(installed.config.registry_install_inputs || this.initialInstallValues(option));
+      let config = option.kind === "remote"
+        ? this.buildRemoteConfig(detail, option)
+        : this.buildPackageConfig(detail, option);
+
+      if (installed.config.disabled) config.disabled = true;
+      if (Array.isArray(installed.config.disabled_tools) && installed.config.disabled_tools.length) {
+        config.disabled_tools = deepClone(installed.config.disabled_tools);
+      }
+
+      this.upsertServerConfig(installed.name, config);
+      await this.applyNow();
+      if (window.toastFrontendSuccess) {
+        window.toastFrontendSuccess(`Updated ${installed.name} to ${detail.version}`, "MCP Registry");
+      }
+    } catch (error) {
+      const message = error?.message || "Failed to update MCP server";
+      if (window.toastFrontendError) {
+        window.toastFrontendError(message, "MCP Registry");
+      }
     }
   },
 };

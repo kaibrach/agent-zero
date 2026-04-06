@@ -80,13 +80,17 @@
                                                 <option value="disabled">OFF</option>
                                             </select>
                                             <button class="button" :disabled="server.disabled || server.tool_count === 0"
-                                                @click="$store.mcpServersStore.onToolCountClick(server.name)">
+                                                @click="$store.mcpServersStore.onToolCountClick(server.runtime_name)">
                                                 <span class="icon material-symbols-outlined">build_circle</span>
                                                 <span x-text="`${server.tool_count}/${server.total_tool_count} tools`"></span>
                                             </button>
                                             <button class="button" x-show="server.has_log"
-                                                @click="$store.mcpServersStore.getServerLog(server.name)">
+                                                @click="$store.mcpServersStore.getServerLog(server.runtime_name)">
                                                 <span class="icon material-symbols-outlined">description</span> Log
+                                            </button>
+                                            <button class="button" x-show="server.registry_name"
+                                                @click="$store.mcpServersStore.updateRegistryServer(server.name)">
+                                                <span class="icon material-symbols-outlined">system_update</span> Update
                                             </button>
                                             <button class="button danger"
                                                 @click="$confirmClick($event, () => $store.mcpServersStore.removeServer(server.name))">
@@ -102,6 +106,9 @@
                                         </template>
                                         <template x-if="server.registry_name">
                                             <span class="meta-item" x-text="server.registry_name"></span>
+                                        </template>
+                                        <template x-if="server.registry_version">
+                                            <span class="meta-item" x-text="`Version ${server.registry_version}`"></span>
                                         </template>
                                     </div>
                                 </div>
@@ -122,6 +129,12 @@
                                 x-model="$store.mcpServersStore.registryQuery"
                                 @input="$store.mcpServersStore.scheduleRegistrySearch()"
                                 placeholder="Search MCP servers by name" />
+                            <select class="version-select"
+                                x-model="$store.mcpServersStore.registryVersionMode"
+                                @change="$store.mcpServersStore.loadRegistryServers()">
+                                <option value="latest">Latest only</option>
+                                <option value="all">All versions</option>
+                            </select>
                             <button class="button" :disabled="$store.mcpServersStore.registryLoading"
                                 @click="$store.mcpServersStore.loadRegistryServers()">
                                 <span class="icon material-symbols-outlined">search</span>
@@ -333,7 +346,8 @@
 
         .search-input,
         .text-input,
-        .server-toggle {
+        .server-toggle,
+        .version-select {
             width: 100%;
             padding: 0.45rem 0.7rem;
             border: 1px solid var(--color-border);

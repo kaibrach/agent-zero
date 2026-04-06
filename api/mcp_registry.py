@@ -31,14 +31,17 @@ class McpRegistry(ApiHandler):
             return {"ok": False, "error": str(e)}
 
     def search(self, input: Input):
-        params: dict[str, str | int] = {"version": "latest", "limit": self._limit(input)}
+        params: dict[str, str | int] = {"limit": self._limit(input)}
         search = str(input.get("search") or "").strip()
         cursor = str(input.get("cursor") or "").strip()
+        version_mode = str(input.get("version_mode") or "latest").strip().lower()
 
         if search:
             params["search"] = search
         if cursor:
             params["cursor"] = cursor
+        if version_mode != "all":
+            params["version"] = "latest"
 
         payload = self._fetch_json(f"{REGISTRY_BASE_URL}/servers", params=params)
         servers = payload.get("servers") if isinstance(payload, dict) else []
