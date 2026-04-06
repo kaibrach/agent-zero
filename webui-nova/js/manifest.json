@@ -1,0 +1,23 @@
+{
+  "name": "Nova",
+  "short_name": "Nova",
+  "description": "Autonomous AI workspace",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#060816",
+  "theme_color": "#0d1730",
+  "icons": [
+    {
+      "src": "/public/icon-maskable.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/public/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

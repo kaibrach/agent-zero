@@ -1,0 +1,387 @@
+<html>
+<head>
+    <title>List Skills</title>
+    <script type="module">
+        import { store } from "/components/settings/skills/skills-list-store.js";
+    </script>
+</head>
+<body>
+    <div x-data>
+        <template x-if="$store.skillsListStore">
+            <div x-init="$store.skillsListStore.init()" x-destroy="$store.skillsListStore.onClose()">
+
+                <div class="section-title">List Skills</div>
+                <div class="section-description">
+                    Browse installed skills and search agentskill.sh using the current project and agent scope.
+                </div>
+
+                <div class="skills-toolbar">
+                    <div class="skills-toolbar-row">
+                        <label class="skills-toolbar-item">
+                            <span class="skills-toolbar-label">Project</span>
+                            <select x-model="$store.skillsListStore.projectName"
+                                @change="$store.skillsListStore.loadSkills()">
+                                <option value="">All</option>
+                                <template x-for="project in $store.skillsListStore.projects" :key="project.key">
+                                    <option :value="project.key" x-text="project.label"></option>
+                                </template>
+                            </select>
+                        </label>
+
+                        <label class="skills-toolbar-item">
+                            <span class="skills-toolbar-label">Agent profile</span>
+                            <select x-model="$store.skillsListStore.agentProfileKey"
+                                @change="$store.skillsListStore.loadSkills()">
+                                <option value="">All</option>
+                                <template x-for="agentProfile in $store.skillsListStore.agentProfiles" :key="agentProfile.key">
+                                    <option :value="agentProfile.key" x-text="agentProfile.label"></option>
+                                </template>
+                            </select>
+                        </label>
+
+                        <div class="skills-toolbar-actions">
+                            <button type="button" class="button confirm" title="Refresh"
+                                @click="Promise.all([$store.skillsListStore.loadSkills(), $store.skillsListStore.loadRegistrySkills()])"
+                                :disabled="$store.skillsListStore.loading">
+                                <span class="icon material-symbols-outlined">refresh</span> Refresh
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="$store.skillsListStore.loading" class="loading">
+                    <span>Loading skills...</span>
+                </div>
+
+                <div x-show="$store.skillsListStore.error" class="error">
+                    <span x-text="$store.skillsListStore.error"></span>
+                </div>
+
+                <div class="section-subtitle">Installed</div>
+
+                <template
+                    x-if="!$store.skillsListStore.loading && !$store.skillsListStore.error && $store.skillsListStore.skills.length === 0">
+                    <div class="skills-empty">No skills found.</div>
+                </template>
+
+                <div class="skills-list">
+                    <template x-for="skill in $store.skillsListStore.skills" :key="skill.path">
+                        <div class="skill-card">
+                            <div class="skill-header">
+                                <div class="skill-heading">
+                                    <div class="skill-title" x-text="skill.name || '(unnamed skill)'"></div>
+                                    <code class="skill-path" x-text="skill.path"></code>
+                                    <div class="skill-badges">
+                                        <template x-if="skill.scope_label">
+                                            <span class="skill-badge" x-text="skill.scope_label"></span>
+                                        </template>
+                                        <template x-if="skill.registry && skill.registry.owner && skill.registry.slug">
+                                            <span class="skill-badge skill-badge-registry"
+                                                x-text="`${skill.registry.owner}/${skill.registry.slug}`"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="skill-actions">
+                                    <template x-if="skill.registry && skill.registry.owner && skill.registry.slug">
+                                        <button type="button" class="button" title="Update from registry"
+                                            @click="$store.skillsListStore.updateSkill(skill)"
+                                            :disabled="$store.skillsListStore.busyKey === `update:${skill.path}`">
+                                            <span class="icon material-symbols-outlined">system_update</span>
+                                            <span x-text="$store.skillsListStore.busyKey === `update:${skill.path}` ? 'Updating...' : 'Update'"></span>
+                                        </button>
+                                    </template>
+                                    <button type="button" class="button" title="Open in browser"
+                                        @click="$store.skillsListStore.openSkill(skill)">
+                                        <span class="icon material-symbols-outlined">folder_open</span> Open
+                                    </button>
+                                    <button type="button" class="button cancel icon-button" title="Delete"
+                                        @click="$confirmClick($event, () => $store.skillsListStore.deleteSkill(skill))"
+                                        :disabled="$store.skillsListStore.busyKey === `delete:${skill.path}`">
+                                        <span class="icon material-symbols-outlined">delete</span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="skill-description" x-text="skill.description || 'No description provided.'"></div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="section-subtitle section-subtitle-spaced">Discover From agentskill.sh</div>
+                <div class="section-description">
+                    Search the public registry and install skills into the selected project and agent scope.
+                </div>
+
+                <div class="skills-toolbar registry-toolbar">
+                    <div class="skills-toolbar-row">
+                        <label class="skills-toolbar-item registry-search-item">
+                            <span class="skills-toolbar-label">Search</span>
+                            <input type="text" x-model="$store.skillsListStore.registryQuery"
+                                @input="$store.skillsListStore.scheduleRegistrySearch()"
+                                placeholder="Search skills, owners, or topics" />
+                        </label>
+
+                        <div class="skills-toolbar-actions">
+                            <button type="button" class="button" title="Search registry"
+                                @click="$store.skillsListStore.loadRegistrySkills()"
+                                :disabled="$store.skillsListStore.registryLoading">
+                                <span class="icon material-symbols-outlined">search</span>
+                                <span x-text="$store.skillsListStore.registryLoading ? 'Searching...' : 'Search'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div x-show="$store.skillsListStore.registryError" class="error">
+                    <span x-text="$store.skillsListStore.registryError"></span>
+                </div>
+
+                <template
+                    x-if="!$store.skillsListStore.registryLoading && !$store.skillsListStore.registryError && $store.skillsListStore.registrySkills.length === 0">
+                    <div class="skills-empty">No registry skills found.</div>
+                </template>
+
+                <div x-show="$store.skillsListStore.registryLoading" class="loading">
+                    <span>Loading registry skills...</span>
+                </div>
+
+                <div class="skills-list">
+                    <template x-for="skill in $store.skillsListStore.registrySkills"
+                        :key="$store.skillsListStore.registrySkillKey(skill)">
+                        <div class="skill-card">
+                            <div class="skill-header">
+                                <div class="skill-heading">
+                                    <div class="skill-title" x-text="skill.name || skill.slug || '(unnamed skill)'"></div>
+                                    <div class="skill-badges">
+                                        <span class="skill-badge skill-badge-registry"
+                                            x-text="`${skill.owner}/${skill.slug}`"></span>
+                                        <template x-if="skill.category">
+                                            <span class="skill-badge" x-text="skill.category"></span>
+                                        </template>
+                                    </div>
+                                </div>
+                                <div class="skill-actions">
+                                    <template x-if="$store.skillsListStore.installedRegistrySkill(skill)">
+                                        <button type="button" class="button" title="Update installed skill"
+                                            @click="$store.skillsListStore.updateSkill($store.skillsListStore.installedRegistrySkill(skill))"
+                                            :disabled="$store.skillsListStore.busyKey === `update:${$store.skillsListStore.installedRegistrySkill(skill)?.path || ''}`">
+                                            <span class="icon material-symbols-outlined">system_update</span>
+                                            <span x-text="$store.skillsListStore.busyKey === `update:${$store.skillsListStore.installedRegistrySkill(skill)?.path || ''}` ? 'Updating...' : 'Update'"></span>
+                                        </button>
+                                    </template>
+                                    <button type="button" class="button confirm" title="Install skill"
+                                        @click="$store.skillsListStore.installRegistrySkill(skill)"
+                                        :disabled="$store.skillsListStore.isRegistryInstalled(skill) || $store.skillsListStore.busyKey === `install:${$store.skillsListStore.registrySkillKey(skill)}`">
+                                        <span class="icon material-symbols-outlined"
+                                            x-text="$store.skillsListStore.isRegistryInstalled(skill) ? 'check_circle' : 'download'"></span>
+                                        <span x-text="$store.skillsListStore.busyKey === `install:${$store.skillsListStore.registrySkillKey(skill)}` ? 'Installing...' : ($store.skillsListStore.isRegistryInstalled(skill) ? 'Installed' : 'Install')"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="skill-description"
+                                x-text="skill.description || skill.summary || 'No description provided.'"></div>
+                            <template x-if="skill.tags && skill.tags.length">
+                                <div class="skill-tags">
+                                    <template x-for="tag in skill.tags" :key="tag">
+                                        <span class="skill-tag" x-text="tag"></span>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                    </template>
+                </div>
+
+            </div>
+        </template>
+    </div>
+
+    <style>
+        .skills-toolbar {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            margin-top: 0.5rem;
+        }
+
+        .skills-toolbar-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .skills-toolbar-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1 1 18rem;
+            min-width: 12rem;
+            margin: 0;
+        }
+
+        .skills-toolbar-label {
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+        }
+
+        .skills-toolbar-item select {
+            flex: 1 1 auto;
+            min-width: 0;
+        }
+
+        .skills-toolbar-actions {
+            margin-left: auto;
+            flex: 0 0 auto;
+        }
+
+        .registry-search-item {
+            flex: 1 1 26rem;
+        }
+
+        .section-subtitle {
+            margin-top: 1rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .section-subtitle-spaced {
+            margin-top: 1.5rem;
+        }
+
+        @media (max-width: 640px) {
+            .skills-toolbar-row {
+                gap: 0.5rem;
+            }
+
+            .skills-toolbar-item {
+                flex-basis: 100%;
+                min-width: 0;
+            }
+
+            .skills-toolbar-actions {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .skills-toolbar-actions .button {
+                width: 100%;
+            }
+        }
+
+        .skills-list {
+            margin-top: 1rem;
+        }
+
+        .skill-card {
+            border: 1px solid var(--color-border);
+            border-radius: 4px;
+            padding: 0.75rem;
+            margin-top: 0.75rem;
+            background: var(--color-bg-primary);
+        }
+
+        .skill-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            flex-wrap: nowrap;
+            min-width: 0;
+        }
+
+        .skill-heading {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .skill-title {
+            font-weight: 600;
+            font-size: 1rem;
+            min-width: 0;
+            flex: 1 1 auto;
+        }
+
+        .skill-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding-bottom: var(--spacing-sm);
+            flex-wrap: wrap;
+            min-width: 0;
+            flex: 0 1 11.5rem;
+            max-width: 100%;
+            justify-content: flex-end;
+        }
+
+        .skill-description {
+            margin-top: 0.35rem;
+            color: var(--color-text-secondary);
+            font-size: var(--font-size-small);
+        }
+
+        .skill-badges,
+        .skill-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-top: 0.5rem;
+        }
+
+        .skill-badge,
+        .skill-tag {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.15rem 0.45rem;
+            border-radius: 999px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            color: var(--color-text-secondary);
+            font-size: 0.75rem;
+            line-height: 1.2;
+        }
+
+        .skill-badge-registry {
+            border-color: color-mix(in srgb, var(--color-secondary) 35%, var(--color-border));
+            color: var(--color-secondary);
+        }
+
+        .skill-path {
+            margin-top: 0.35rem;
+            font-size: 0.85rem;
+            color: var(--color-text-muted);
+            min-width: 0;
+            max-width: 100%;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+
+        .skills-empty {
+            margin-top: 1rem;
+            padding: 0.75rem;
+            border: 1px dashed var(--color-border);
+            border-radius: 4px;
+            text-align: center;
+            color: var(--color-text-secondary);
+        }
+
+        .loading {
+            width: 100%;
+            text-align: center;
+            margin-top: 1rem;
+            margin-bottom: 1rem;
+            color: var(--color-secondary);
+        }
+
+        .error {
+            color: var(--color-error);
+            margin: 0.5rem 0;
+            padding: 0.5rem;
+            background: var(--color-error-bg);
+            border-radius: 4px;
+        }
+    </style>
+</body>
+</html>

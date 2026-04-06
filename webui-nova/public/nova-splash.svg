@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160">
+  <defs>
+    <radialGradient id="novaSplashGlow" cx="50%" cy="28%" r="82%">
+      <stop offset="0%" stop-color="#1c3e81"/>
+      <stop offset="55%" stop-color="#0b1430"/>
+      <stop offset="100%" stop-color="#040711"/>
+    </radialGradient>
+    <linearGradient id="novaSplashFill" x1="12%" y1="14%" x2="88%" y2="86%">
+      <stop offset="0%" stop-color="#97d1ff"/>
+      <stop offset="100%" stop-color="#6af4d9"/>
+    </linearGradient>
+  </defs>
+  <rect width="160" height="160" rx="36" fill="url(#novaSplashGlow)"/>
+  <circle cx="114" cy="38" r="8" fill="#6af4d9"/>
+  <path d="M42 112V42h12l33 37.8V42h12v70H87L54 74.1V112Z" fill="url(#novaSplashFill)"/>
+  <path d="M31 124c20.3-5.1 40.8-7.7 61.5-7.7 18.1 0 33.6 1.8 46.5 5.3" fill="none" stroke="rgba(151,209,255,0.45)" stroke-width="5" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+    <defs>
+        <linearGradient id="novaBg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#132349"/>
+            <stop offset="60%" stop-color="#08101f"/>
+            <stop offset="100%" stop-color="#040812"/>
+        </linearGradient>
+        <linearGradient id="novaGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#8fc9ff"/>
+            <stop offset="100%" stop-color="#67f5d2"/>
+        </linearGradient>
+    </defs>
+    <rect width="96" height="96" rx="24" fill="url(#novaBg)"/>
+    <circle cx="72" cy="24" r="6" fill="#67f5d2"/>
+    <path d="M24 70V24h10.5l27 30.5V24H72v46H61.5L34.5 39.2V70Z" fill="url(#novaGlow)"/>
+    <path d="M18 74c12-2.5 23.7-4 35.1-4 10.3 0 18.8 1 25.9 2.9" fill="none" stroke="rgba(143,201,255,0.45)" stroke-width="4" stroke-linecap="round"/>
+</svg>

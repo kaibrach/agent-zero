@@ -1,0 +1,101 @@
+@import url("https://fonts.googleapis.com/css2?family=Exo+2:wght@400;500;600;700;800&family=Michroma&display=swap");
+
+body {
+    background:
+        radial-gradient(circle at top, rgba(69, 126, 255, 0.22), transparent 38%),
+        linear-gradient(180deg, #060816 0%, #050711 100%);
+    color: #d7e5ff;
+    font-family: "Exo 2", "Trebuchet MS", sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+}
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+}
+
+.login-form {
+    background: rgba(12, 19, 38, 0.9);
+    padding: 2rem;
+    border-radius: 1.125rem;
+    border: 1px solid rgba(126, 162, 255, 0.22);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(14px);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.logo {
+    width: 132px;
+    height: 132px;
+    margin-bottom: 0.75rem;
+}
+
+h2 {
+    font-family: "Michroma", "Exo 2", sans-serif;
+    font-size: 1.55rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-bottom: 2rem;
+}
+
+.input-group {
+    margin-bottom: 1.5rem;
+    text-align: left;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #90a9dd;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid rgba(126, 162, 255, 0.22);
+    border-radius: 0.5rem;
+    background-color: #08101f;
+    color: #edf3ff;
+    font-size: 1rem;
+    box-sizing: border-box; /* Added for consistent padding */
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: #7cc7ff;
+    box-shadow: 0 0 0 3px rgba(67, 139, 255, 0.18);
+}
+
+button {
+    width: 100%;
+    padding: 0.75rem;
+    border: none;
+    border-radius: 0.5rem;
+    background: linear-gradient(135deg, #3f8cff 0%, #63f4d8 100%);
+    color: #04101f;
+    font-family: "Michroma", "Exo 2", sans-serif;
+    font-size: 1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+}
+
+button:hover {
+    filter: brightness(1.04);
+    transform: translateY(-1px);
+    box-shadow: 0 14px 24px rgba(30, 110, 255, 0.28);
+}
+
+.error {
+    color: #ff8aa1;
+    margin-top: 1rem;
+}
