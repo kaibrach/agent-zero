@@ -1,6 +1,10 @@
+import base64
+import io
 import json
 import re
 import shutil
+import zipfile
+from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import quote, quote_plus
 
@@ -32,8 +36,12 @@ class Skills(ApiHandler):
                 data = self.delete_skill(input)
             elif action == "registry_search":
                 data = self.registry_search(input)
+            elif action == "registry_detail":
+                data = self.registry_detail(input)
             elif action == "registry_install":
                 data = self.registry_install(input)
+            elif action == "registry_download":
+                data = self.registry_download(input)
             elif action == "registry_update":
                 data = self.registry_update(input)
             else:
@@ -101,20 +109,108 @@ class Skills(ApiHandler):
     def registry_search(self, input: Input):
         query = str(input.get("query") or "").strip()
         section = str(input.get("section") or "").strip()
+        limit = self._sanitize_limit(input.get("limit"))
+        page = self._sanitize_page(input.get("page"))
 
         if section:
-            url = f"{REGISTRY_SEARCH_URL}?section={quote_plus(section)}"
+            url = f"{REGISTRY_SEARCH_URL}?section={quote_plus(section)}&limit={limit}&page={page}"
         else:
-            url = f"{REGISTRY_SEARCH_URL}?q={quote_plus(query)}"
+            url = f"{REGISTRY_SEARCH_URL}?q={quote_plus(query)}&limit={limit}&page={page}"
 
         payload = self._fetch_json(url)
         if isinstance(payload, dict):
             for key in ("results", "data", "items", "skills"):
                 if isinstance(payload.get(key), list):
-                    return payload.get(key)
+                    return {
+                        "results": payload.get(key),
+                        "total": payload.get("total"),
+                        "hasMore": bool(payload.get("hasMore")),
+                        "totalExact": bool(payload.get("totalExact")),
+                        "platformFallback": bool(payload.get("platformFallback")),
+                        "page": page,
+                        "limit": limit,
+                        "section": section or None,
+                        "query": query,
+                    }
         if isinstance(payload, list):
-            return payload
-        return []
+            return {
+                "results": payload,
+                "total": len(payload),
+                "hasMore": False,
+                "totalExact": True,
+                "platformFallback": False,
+                "page": page,
+                "limit": limit,
+                "section": section or None,
+                "query": query,
+            }
+        return {
+            "results": [],
+            "total": 0,
+            "hasMore": False,
+            "totalExact": True,
+            "platformFallback": False,
+            "page": page,
+            "limit": limit,
+            "section": section or None,
+            "query": query,
+        }
+
+    def registry_detail(self, input: Input):
+        owner = str(input.get("owner") or "").strip()
+        slug = str(input.get("slug") or "").strip()
+        if not owner or not slug:
+            raise Exception("owner and slug are required")
+
+        payload = self._fetch_registry_install_payload(owner, slug)
+        return {
+            "slug": payload.get("slug") or self._registry_slug(owner, slug),
+            "name": payload.get("name") or slug,
+            "owner": payload.get("owner") or owner,
+            "description": payload.get("description") or "",
+            "skillMd": payload.get("skillMd") or payload.get("content") or "",
+            "contentSha": payload.get("contentSha"),
+            "updatedAt": payload.get("updatedAt"),
+            "source": f"https://agentskill.sh/{owner}/{slug}",
+        }
+
+    def registry_download(self, input: Input):
+        owner = str(input.get("owner") or "").strip()
+        slug = str(input.get("slug") or "").strip()
+        if not owner or not slug:
+            raise Exception("owner and slug are required")
+
+        payload = self._fetch_registry_install_payload(owner, slug)
+        content = payload.get("skillMd") if isinstance(payload, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            content = payload.get("content") if isinstance(payload, dict) else None
+        if not isinstance(content, str) or not content.strip():
+            raise Exception("Registry did not return SKILL.md content")
+
+        archive_name = f"{owner}-{slug}.zip"
+        zip_buffer = io.BytesIO()
+        registry_slug = self._registry_slug(owner, slug)
+        zip_root = f"{slug}/"
+        meta = {
+            "owner": owner,
+            "slug": slug,
+            "registry_slug": registry_slug,
+            "contentSha": payload.get("contentSha"),
+            "updatedAt": payload.get("updatedAt"),
+            "source": "agentskill.sh",
+            "downloadedAt": datetime.now(timezone.utc).isoformat(),
+        }
+
+        with zipfile.ZipFile(zip_buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr(f"{zip_root}SKILL.md", content)
+            archive.writestr(f"{zip_root}{REGISTRY_META_FILE}", json.dumps(meta, indent=2))
+
+        return {
+            "filename": archive_name,
+            "content_b64": base64.b64encode(zip_buffer.getvalue()).decode("ascii"),
+            "owner": owner,
+            "slug": slug,
+        }
 
     def registry_install(self, input: Input):
         owner = str(input.get("owner") or "").strip()
@@ -128,9 +224,7 @@ class Skills(ApiHandler):
             raise Exception("owner and slug are required")
 
         registry_slug = self._registry_slug(owner, slug)
-        payload = self._fetch_json(
-            REGISTRY_INSTALL_URL.format(slug=quote(registry_slug, safe=""))
-        )
+        payload = self._fetch_registry_install_payload(owner, slug)
         content = payload.get("skillMd") if isinstance(payload, dict) else None
         if not isinstance(content, str) or not content.strip():
             content = payload.get("content") if isinstance(payload, dict) else None
@@ -180,9 +274,7 @@ class Skills(ApiHandler):
             raise Exception("Registry metadata is incomplete")
 
         registry_slug = self._registry_slug(owner, slug)
-        payload = self._fetch_json(
-            REGISTRY_INSTALL_URL.format(slug=quote(registry_slug, safe=""))
-        )
+        payload = self._fetch_registry_install_payload(owner, slug)
         content = payload.get("skillMd") if isinstance(payload, dict) else None
         if not isinstance(content, str) or not content.strip():
             content = payload.get("content") if isinstance(payload, dict) else None
@@ -215,6 +307,15 @@ class Skills(ApiHandler):
         except ValueError as e:
             raise Exception("Registry returned invalid JSON") from e
 
+    def _fetch_registry_install_payload(self, owner: str, slug: str) -> dict:
+        registry_slug = self._registry_slug(owner, slug)
+        payload = self._fetch_json(
+            REGISTRY_INSTALL_URL.format(slug=quote(registry_slug, safe=""))
+        )
+        if not isinstance(payload, dict):
+            raise Exception("Registry returned invalid skill payload")
+        return payload
+
     def _registry_slug(self, owner: str, slug: str) -> str:
         if "/" in slug:
             return slug.lstrip("@")
@@ -232,6 +333,20 @@ class Skills(ApiHandler):
         if value not in {"skip", "overwrite", "rename"}:
             return "skip"
         return value
+
+    def _sanitize_limit(self, value: object) -> int:
+        try:
+            limit = int(value or 12)
+        except (TypeError, ValueError):
+            return 12
+        return max(1, min(limit, 100))
+
+    def _sanitize_page(self, value: object) -> int:
+        try:
+            page = int(value or 1)
+        except (TypeError, ValueError):
+            return 1
+        return max(1, page)
 
     def _resolve_registry_install_dir(
         self,

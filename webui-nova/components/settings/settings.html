@@ -35,10 +35,6 @@
                  @click="$store.settings.switchTab('agent')"
                  title="Agent Settings">Agent Settings</div>
             <div class="settings-tab"
-                 :class="{'active': $store.settings.activeTab === 'skills'}"
-                 @click="$store.settings.switchTab('skills')"
-                 title="Skills">Skills</div>
-            <div class="settings-tab"
                  :class="{'active': $store.settings.activeTab === 'external'}"
                  @click="$store.settings.switchTab('external')"
                  title="External Services">External Services</div>
@@ -73,9 +69,6 @@
           </div>
           <div x-show="$store.settings.activeTab === 'backup'">
             <x-component path="settings/backup/backup-settings.html"></x-component>
-          </div>
-          <div x-show="$store.settings.activeTab === 'skills'">
-            <x-component path="settings/skills/skills-settings.html"></x-component>
           </div>
         </div>
       </div>

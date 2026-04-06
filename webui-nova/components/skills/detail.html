@@ -1,0 +1,598 @@
+<html>
+<head>
+    <title>Skill Details</title>
+    <script type="module">
+        import { store } from "/components/skills/skills-store.js";
+    </script>
+</head>
+<body>
+    <div x-data>
+        <template x-if="$store.skillsStore?.selectedSkill">
+            <div class="pi-detail-container">
+                <div class="pi-hero">
+                    <div class="pi-hero-thumb">
+                        <template x-if="$store.skillsStore.getThumbnailUrl($store.skillsStore.selectedSkill)">
+                            <img :src="$store.skillsStore.getThumbnailUrl($store.skillsStore.selectedSkill)"
+                                :alt="$store.skillsStore.selectedSkill.title || $store.skillsStore.selectedSkill.name">
+                        </template>
+                        <template x-if="!$store.skillsStore.getThumbnailUrl($store.skillsStore.selectedSkill)">
+                            <span class="material-symbols-outlined pi-hero-placeholder">psychology_alt</span>
+                        </template>
+                    </div>
+                    <div class="pi-hero-info">
+                        <div class="pi-hero-title-row">
+                            <div class="pi-hero-main">
+                                <h2 class="pi-hero-title" x-text="$store.skillsStore.selectedSkill.title || $store.skillsStore.selectedSkill.name || $store.skillsStore.selectedSkill.slug"></h2>
+                                <div class="pi-status-badges">
+                                    <template x-if="$store.skillsStore.selectedSkill.blocked">
+                                        <span class="pi-card-suspended-pill">
+                                            <span class="material-symbols-outlined">priority_high</span>
+                                            <span>Requirements failed</span>
+                                        </span>
+                                    </template>
+                                    <template x-if="$store.skillsStore.selectedSkill.installed">
+                                        <span class="pi-card-installed-pill">Installed</span>
+                                    </template>
+                                    <template x-if="$store.skillsStore.selectedSkill.has_update">
+                                        <span class="pi-card-update-pill">New version</span>
+                                    </template>
+                                </div>
+                                <div class="pi-hero-meta">
+                                    <span class="pi-hero-author">
+                                        <span class="pi-hero-label">Owner</span>
+                                        <span x-text="$store.skillsStore.selectedSkill.owner"></span>
+                                    </span>
+                                    <span class="pi-hero-stars">
+                                        <span class="material-symbols-outlined">star</span>
+                                        <span x-text="$store.skillsStore.selectedSkill.githubStars || 0"></span>
+                                    </span>
+                                    <span class="pi-hero-stars">
+                                        <span class="material-symbols-outlined">download</span>
+                                        <span x-text="$store.skillsStore.selectedSkill.installCount || 0"></span>
+                                    </span>
+                                    <span class="pi-hero-stars">
+                                        <span class="material-symbols-outlined">verified</span>
+                                        <span x-text="$store.skillsStore.ratingLabel($store.skillsStore.selectedSkill.score)"></span>
+                                    </span>
+                                </div>
+                                <div class="pi-hero-tags" x-show="$store.skillsStore.selectedSkill.tags?.length">
+                                    <template x-for="tag in $store.skillsStore.selectedSkill.tags || []" :key="tag">
+                                        <span class="pi-tag" x-text="tag"></span>
+                                    </template>
+                                </div>
+                            </div>
+                            <div class="pi-hero-manage">
+                                <button type="button" class="button" @click="$store.skillsStore.downloadRegistrySkill($store.skillsStore.selectedSkill)"
+                                    :disabled="$store.skillsStore.selectedSkill.blocked || $store.skillsStore.busyKey === `download:${$store.skillsStore.selectedSkill.key}`">
+                                    <span class="icon material-symbols-outlined">download</span>
+                                    <span x-text="$store.skillsStore.busyKey === `download:${$store.skillsStore.selectedSkill.key}` ? 'Downloading...' : 'Download Zip'"></span>
+                                </button>
+                                <template x-if="$store.skillsStore.selectedSkill.has_update">
+                                    <button type="button" class="button" @click="$store.skillsStore.updateSkill($store.skillsStore.selectedSkill)"
+                                        :disabled="$store.skillsStore.busyKey === `update:${$store.skillsStore.selectedSkill.installedSkill?.path || ''}`">
+                                        <span class="icon material-symbols-outlined">system_update_alt</span>
+                                        <span x-text="$store.skillsStore.busyKey === `update:${$store.skillsStore.selectedSkill.installedSkill?.path || ''}` ? 'Updating...' : 'Update'"></span>
+                                    </button>
+                                </template>
+                                <button type="button" class="button" @click="$store.skillsStore.openInstallDialog($store.skillsStore.selectedSkill)"
+                                    :disabled="$store.skillsStore.selectedSkill.blocked || $store.skillsStore.busyKey === `install:${$store.skillsStore.selectedSkill.key}`">
+                                    <span class="icon material-symbols-outlined" x-text="$store.skillsStore.selectedSkill.installed ? 'content_copy' : 'download'"></span>
+                                    <span x-text="$store.skillsStore.selectedSkill.installed ? 'Install Copy' : 'Install'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <template x-if="$store.skillsStore.selectedSkill.blocked">
+                    <div class="pi-suspension-banner">
+                        <span class="material-symbols-outlined">priority_high</span>
+                        <div class="pi-suspension-banner-copy">
+                            <div class="pi-suspension-banner-title">This skill does not meet the current marketplace requirements.</div>
+                            <div class="pi-suspension-banner-explanation">Install and download actions are disabled because the quality or security score is below the accepted threshold.</div>
+                        </div>
+                    </div>
+                </template>
+
+                <div class="pi-description" x-text="$store.skillsStore.selectedSkill.description || 'No description available.'"></div>
+
+                <div class="pi-version-section">
+                    <div class="pi-version-header">Registry</div>
+                    <div class="pi-version-grid">
+                        <div class="pi-version-card">
+                            <div class="pi-version-label">Updated</div>
+                            <div class="pi-version-name" x-text="$store.skillsStore.formatRelativeDate($store.skillsStore.selectedSkill.updatedAt)"></div>
+                            <div class="pi-version-time" x-text="$store.skillsStore.selectedSkill.updatedAt || 'Timestamp unavailable'"></div>
+                        </div>
+                        <div class="pi-version-card">
+                            <div class="pi-version-label">Quality</div>
+                            <div class="pi-version-name" x-text="$store.skillsStore.selectedSkill.contentQualityScore ?? 'n/a'"></div>
+                            <div class="pi-version-time">Security: <span x-text="$store.skillsStore.selectedSkill.securityScore ?? 'n/a'"></span></div>
+                        </div>
+                        <div class="pi-version-card">
+                            <div class="pi-version-label">Content SHA</div>
+                            <div class="pi-version-name" x-text="$store.skillsStore.selectedSkill.contentSha || 'Unavailable'"></div>
+                            <div class="pi-version-time">Slug: <span x-text="$store.skillsStore.selectedSkill.slug"></span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pi-readme-section" x-show="$store.skillsStore.detailLoading || $store.skillsStore.detailError || $store.skillsStore.detailHtml">
+                    <div class="pi-readme-header">SKILL.md</div>
+                    <div x-show="$store.skillsStore.detailLoading" class="pi-loading-text">Loading skill details...</div>
+                    <div x-show="$store.skillsStore.detailError && !$store.skillsStore.detailLoading" class="pi-loading-text" x-text="$store.skillsStore.detailError"></div>
+                    <div x-show="$store.skillsStore.detailHtml && !$store.skillsStore.detailLoading" class="pi-readme-content" x-html="$store.skillsStore.detailHtml"></div>
+                </div>
+
+                <div class="pi-developer-section">
+                    <div class="pi-developer-header">Skill Source</div>
+                    <div class="pi-developer-links">
+                        <a :href="`https://agentskill.sh/${$store.skillsStore.selectedSkill.owner}/${$store.skillsStore.selectedSkill.slug}`" target="_blank" class="pi-dev-link">
+                            <span class="material-symbols-outlined">storefront</span>
+                            <span>Marketplace Page</span>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="skill-install-mask"
+                    x-show="$store.skillsStore.installDialogOpen"
+                    x-transition.opacity
+                    style="display:none;"
+                    @click.self="$store.skillsStore.closeInstallDialog()">
+                    <div class="skill-install-panel">
+                        <div class="skill-install-panel-header">
+                            <div>
+                                <div class="pi-readme-header">Install Skill</div>
+                                <div class="pi-loading-text" x-text="$store.skillsStore.installSkill ? `${$store.skillsStore.installSkill.owner}/${$store.skillsStore.installSkill.slug}` : 'Configure install target'"></div>
+                            </div>
+                            <button type="button" class="button icon-button" @click="$store.skillsStore.closeInstallDialog()">
+                                <span class="icon material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div class="detail-card install-preview" x-show="$store.skillsStore.installSkill">
+                            <div class="detail-card-title" x-text="$store.skillsStore.installSkill?.title || $store.skillsStore.installSkill?.name || $store.skillsStore.installSkill?.slug"></div>
+                            <div class="pi-loading-text" x-text="$store.skillsStore.installSkill?.description || 'No description provided.'"></div>
+                            <div class="detail-card-note">Destination: <strong x-text="$store.skillsStore.installDestinationPreview()"></strong></div>
+                        </div>
+
+                        <div class="install-form-grid">
+                            <label class="policy-label">
+                                <span class="policy-label-text">Project</span>
+                                <select x-model="$store.skillsStore.installProjectName" class="policy-dropdown">
+                                    <option value="">All</option>
+                                    <template x-for="project in $store.skillsStore.projects" :key="project.key">
+                                        <option :value="project.key" x-text="project.label"></option>
+                                    </template>
+                                </select>
+                            </label>
+
+                            <label class="policy-label">
+                                <span class="policy-label-text">Agent profile</span>
+                                <select x-model="$store.skillsStore.installAgentProfileKey" class="policy-dropdown">
+                                    <option value="">All</option>
+                                    <template x-for="agentProfile in $store.skillsStore.agentProfiles" :key="agentProfile.key">
+                                        <option :value="agentProfile.key" x-text="agentProfile.label"></option>
+                                    </template>
+                                </select>
+                            </label>
+
+                            <label class="policy-label">
+                                <span class="policy-label-text">Namespace</span>
+                                <input class="text-input" type="text" placeholder="authors or team" x-model="$store.skillsStore.installNamespace">
+                            </label>
+
+                            <label class="policy-label">
+                                <span class="policy-label-text">Conflict policy</span>
+                                <select x-model="$store.skillsStore.installConflict" class="policy-dropdown">
+                                    <option value="skip">Skip existing</option>
+                                    <option value="rename">Rename existing</option>
+                                    <option value="overwrite">Overwrite existing</option>
+                                </select>
+                            </label>
+                        </div>
+
+                        <div x-show="$store.skillsStore.installError" class="pi-loading-text" x-text="$store.skillsStore.installError"></div>
+
+                        <div class="skill-actions-row detail-actions-row">
+                            <button type="button" class="button" @click="$store.skillsStore.closeInstallDialog()">Cancel</button>
+                            <button type="button" class="button"
+                                @click="$store.skillsStore.installRegistrySkill($store.skillsStore.installSkill)"
+                                :disabled="!$store.skillsStore.installSkill || $store.skillsStore.busyKey === `install:${$store.skillsStore.installSkill.key}`">
+                                <span x-text="$store.skillsStore.busyKey === `install:${$store.skillsStore.installSkill.key}` ? 'Installing...' : 'Install Skill'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="$store.skillsStore?.selectedSkill">
+            <div class="modal-footer pi-footer" data-modal-footer>
+                <div class="buttons-container">
+                    <div class="buttons-left"></div>
+                    <div class="buttons-right">
+                        <button class="btn btn-cancel" @click="window.closeModal?.()">Close</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
+
+    <style>
+        .pi-detail-container {
+            padding: 1rem;
+            margin: 0 auto;
+        }
+
+        .pi-hero {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .pi-hero-thumb {
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, #6b728089, var(--color-panel)), var(--color-panel);
+            border: 1px solid var(--color-border);
+        }
+
+        .pi-hero-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            padding: 0.5rem;
+        }
+
+        .pi-hero-placeholder {
+            font-size: 5rem;
+            color: var(--color-text-muted);
+        }
+
+        .pi-hero-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pi-hero-title-row {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) clamp(15rem, 42%, 28rem);
+            align-items: flex-start;
+            column-gap: 1rem;
+            row-gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pi-hero-main {
+            min-width: 0;
+            width: 100%;
+        }
+
+        .pi-status-badges,
+        .pi-hero-tags,
+        .pi-hero-manage,
+        .pi-developer-links,
+        .skill-actions-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+
+        .pi-hero-title {
+            margin: 0;
+            font-size: 1.75rem;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--color-text-primary);
+            min-width: 0;
+        }
+
+        .pi-hero-manage {
+            justify-content: flex-end;
+            align-content: flex-start;
+            width: 100%;
+        }
+
+        .pi-hero-manage .button {
+            padding: 0.3rem 0.6rem;
+            font-size: 0.9rem;
+        }
+
+        .pi-hero-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 0.5rem;
+        }
+
+        .pi-hero-label {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-right: 0.2rem;
+        }
+
+        .pi-hero-author,
+        .pi-hero-stars {
+            font-size: 0.95rem;
+            color: var(--color-text-secondary);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            flex-wrap: wrap;
+        }
+
+        .pi-hero-stars .material-symbols-outlined {
+            font-size: 1.1rem;
+            color: #fbbf24;
+        }
+
+        .pi-card-installed-pill,
+        .pi-card-update-pill,
+        .pi-card-suspended-pill,
+        .pi-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.24rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            border: 1px solid transparent;
+        }
+
+        .pi-card-installed-pill {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .pi-card-update-pill {
+            background: rgba(59, 130, 246, 0.16);
+            color: #60a5fa;
+        }
+
+        .pi-card-suspended-pill {
+            background: rgba(245, 158, 11, 0.16);
+            color: #f59e0b;
+        }
+
+        .pi-card-suspended-pill .material-symbols-outlined {
+            font-size: 0.95rem;
+        }
+
+        .pi-tag {
+            background: var(--color-panel);
+            color: var(--color-text-secondary);
+            border-color: var(--color-border);
+            font-weight: 500;
+        }
+
+        .pi-description {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+            margin-bottom: 1.5rem;
+        }
+
+        .pi-suspension-banner {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.75rem;
+            margin-bottom: 1rem;
+            padding: 0.9rem 1rem;
+            border: 1px solid rgba(245, 158, 11, 0.32);
+            border-radius: 10px;
+            background: rgba(245, 158, 11, 0.12);
+            color: #f59e0b;
+        }
+
+        .pi-suspension-banner .material-symbols-outlined {
+            font-size: 1.2rem;
+            line-height: 1.2;
+            flex-shrink: 0;
+        }
+
+        .pi-suspension-banner-title {
+            font-size: 0.92rem;
+            font-weight: 700;
+            line-height: 1.45;
+        }
+
+        .pi-suspension-banner-explanation {
+            margin-top: 0.2rem;
+            font-size: 0.92rem;
+            line-height: 1.55;
+        }
+
+        .pi-version-section,
+        .pi-readme-section,
+        .pi-developer-section {
+            margin-bottom: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .pi-version-header,
+        .pi-readme-header,
+        .pi-developer-header {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .pi-version-grid,
+        .install-form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 0.75rem;
+        }
+
+        .pi-version-card,
+        .detail-card,
+        .skill-install-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+            padding: 0.9rem 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            background: var(--color-panel);
+        }
+
+        .pi-version-label,
+        .policy-label-text {
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+        }
+
+        .pi-version-name,
+        .detail-card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            line-height: 1.35;
+        }
+
+        .pi-version-time,
+        .pi-loading-text,
+        .detail-card-note {
+            font-size: 0.85rem;
+            color: var(--color-text-secondary);
+            line-height: 1.4;
+        }
+
+        .pi-readme-content {
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: var(--color-text-primary);
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .pi-readme-content::-webkit-scrollbar {
+            display: none;
+        }
+
+        .pi-readme-content h1,
+        .pi-readme-content h2,
+        .pi-readme-content h3,
+        .pi-readme-content h4 {
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--color-text-primary);
+        }
+
+        .pi-readme-content p,
+        .pi-readme-content ul,
+        .pi-readme-content ol,
+        .pi-readme-content pre {
+            margin-bottom: 0.75rem;
+        }
+
+        .pi-readme-content code {
+            background: var(--color-panel);
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            font-family: var(--font-family-mono);
+            font-size: 0.85em;
+        }
+
+        .pi-readme-content pre {
+            background: var(--color-panel);
+            padding: 1rem;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+
+        .pi-readme-content pre code {
+            background: none;
+            padding: 0;
+        }
+
+        .pi-dev-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.65rem 0.8rem;
+            border-radius: 8px;
+            border: 1px solid var(--color-border);
+            text-decoration: none;
+            color: var(--color-text-primary);
+            background: var(--color-panel);
+        }
+
+        .skill-install-mask {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+            background: color-mix(in srgb, #08121d 68%, transparent);
+            backdrop-filter: blur(8px);
+        }
+
+        .skill-install-panel {
+            width: min(760px, 100%);
+            max-height: min(92vh, 980px);
+            overflow: auto;
+            gap: 0.9rem;
+        }
+
+        .policy-label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+        }
+
+        .policy-dropdown,
+        .text-input {
+            width: 100%;
+            padding: 0.55rem 0.7rem;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            background: var(--color-background);
+            color: var(--color-text-primary);
+        }
+
+        .detail-actions-row {
+            justify-content: flex-end;
+        }
+
+        @media (max-width: 860px) {
+            .pi-hero-title-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .pi-hero,
+            .pi-hero-manage,
+            .skill-install-panel-header,
+            .detail-actions-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .pi-hero-manage .button,
+            .skill-actions-row .button {
+                width: 100%;
+            }
+        }
+    </style>
+</body>
+</html>

@@ -30,6 +30,11 @@
                             <h3 class="welcome-action-title">Memory</h3>
                         </div>
 
+                        <div class="welcome-action-card welcome-action-card-skills" @click="$store.welcomeStore.executeAction('skills')">
+                            <span class="material-symbols-outlined welcome-action-icon">psychology_alt</span>
+                            <h3 class="welcome-action-title">Skills</h3>
+                        </div>
+
                         <div class="welcome-action-card" @click="$store.welcomeStore.executeAction('scheduler')">
                             <span class="material-symbols-outlined welcome-action-icon">schedule</span>
                             <h3 class="welcome-action-title">Scheduler</h3>
@@ -307,6 +312,13 @@
             text-align: left;
             position: relative;
             transition: all 0.2s ease;
+        }
+
+        .welcome-action-card-skills {
+            background:
+                radial-gradient(circle at top right, rgba(219, 122, 44, 0.16), transparent 40%),
+                linear-gradient(180deg, color-mix(in srgb, var(--color-panel) 94%, white 6%), var(--color-panel));
+            border-color: color-mix(in srgb, #db7a2c 24%, var(--color-border));
         }
 
         .welcome-banner:hover {

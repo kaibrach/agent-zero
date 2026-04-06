@@ -217,6 +217,9 @@ const model = {
       case "memory":
         memoryStore.openModal();
         break;
+      case "skills":
+        window.openModal("components/skills/main.html");
+        break;
       case "files":
         chatInputStore.browseFiles();
         break;

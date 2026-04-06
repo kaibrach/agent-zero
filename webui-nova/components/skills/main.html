@@ -1,0 +1,85 @@
+<html>
+<head>
+    <title>Skills</title>
+</head>
+<body>
+    <div x-data="{ activeTab: 'browse' }">
+        <div class="skills-main-shell">
+            <ul class="nav nav-tabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" :class="{ active: activeTab === 'browse' }"
+                        type="button" role="tab" @click="activeTab = 'browse'">
+                        <span class="material-symbols-outlined pi-tab-icon">store</span> Browse
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" :class="{ active: activeTab === 'installed' }"
+                        type="button" role="tab" @click="activeTab = 'installed'">
+                        <span class="material-symbols-outlined pi-tab-icon">inventory_2</span> Installed
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" :class="{ active: activeTab === 'import' }"
+                        type="button" role="tab" @click="activeTab = 'import'">
+                        <span class="material-symbols-outlined pi-tab-icon">upload_file</span> ZIP
+                    </button>
+                </li>
+            </ul>
+
+            <template x-if="activeTab === 'browse'">
+                <x-component path="components/skills/browse.html"></x-component>
+            </template>
+
+            <template x-if="activeTab === 'installed'">
+                <x-component path="components/skills/list.html"></x-component>
+            </template>
+
+            <template x-if="activeTab === 'import'">
+                <x-component path="components/skills/import.html"></x-component>
+            </template>
+        </div>
+    </div>
+
+    <style>
+        .skills-main-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .nav {
+            display: flex;
+            padding-left: 0;
+            margin: 0 0 1rem 0;
+            list-style: none;
+            border-bottom: 1px solid var(--color-border);
+            gap: 0.25rem;
+        }
+
+        .nav-link {
+            font-family: "Rubik", Arial, Helvetica, sans-serif;
+            border: 1px solid transparent;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            padding: 0.4rem 0.7rem;
+            background: transparent;
+            color: var(--color-text-secondary);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+        }
+
+        .nav-link.active {
+            color: var(--color-text-primary);
+            border-color: var(--color-border);
+            border-bottom-color: transparent;
+            background: var(--color-background);
+        }
+
+        .pi-tab-icon {
+            font-size: 1.1rem;
+        }
+    </style>
+</body>
+</html>
