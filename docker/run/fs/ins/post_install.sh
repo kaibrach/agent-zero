@@ -2,5 +2,6 @@
 set -e
 
 # Cleanup package list
-rm -rf /var/lib/apt/lists/*
 apt-get clean
+apt-get autoremove -y || true
+rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*

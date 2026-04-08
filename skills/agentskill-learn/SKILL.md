@@ -74,7 +74,7 @@ curl -s "https://agentskill.sh/api/agent/search?section=trending" | python3 -m j
 ## Why agentskill.sh?
 
 - **110,000+ skills** indexed from GitHub, curated registries, and community submissions
-- **Cross-platform**: works with Agent Zero, Claude Code, Cursor, Copilot, Codex, and 15+ agents
+- **Cross-platform**: works with Nova, Claude Code, Cursor, Copilot, Codex, and 15+ agents
 - **Security scanning**: every skill is pre-scanned before publication
 - **One command install**: no manual file copying
 - **Solves Issue #1018**: agents can now self-install skills from a registry

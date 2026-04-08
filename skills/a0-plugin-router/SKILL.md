@@ -1,6 +1,6 @@
 ---
 name: a0-plugin-router
-description: Main entry point for all Agent Zero plugin tasks. Routes to specialist skills for creating, reviewing, contributing, managing, or debugging plugins. Use when the user mentions plugins, asks how the plugin system works, wants to build/install/uninstall/publish/debug a plugin, or asks about the Plugin Hub.
+description: Main entry point for all Nova plugin tasks. Routes to specialist skills for creating, reviewing, contributing, managing, or debugging plugins. Use when the user mentions plugins, asks how the plugin system works, wants to build/install/uninstall/publish/debug a plugin, or asks about the Plugin Hub.
 version: 1.0.0
 tags: ["plugins", "router", "meta", "create", "review", "contribute", "manage", "plugin-hub"]
 trigger_patterns:
@@ -17,7 +17,7 @@ trigger_patterns:
   - "how does the plugin system work"
 ---
 
-# Agent Zero Plugin Router
+# Nova Plugin Router
 
 ## Routing Decision
 
@@ -43,7 +43,7 @@ If the user says "make a plugin for the community" - start with `a0-create-plugi
 
 ### Roots and Discovery
 
-Agent Zero discovers plugins from two roots, in priority order:
+Nova discovers plugins from two roots, in priority order:
 1. `usr/plugins/<name>/` - user plugins (your custom plugins go here)
 2. `plugins/<name>/` - core system plugins (framework-bundled, do not modify)
 

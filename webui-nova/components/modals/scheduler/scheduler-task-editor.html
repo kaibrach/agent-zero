@@ -62,6 +62,27 @@
                         </div>
                     </div>
 
+                    <div class="scheduler-form-field">
+                        <div class="label-help-wrapper">
+                            <label class="scheduler-form-label">Sidebar Task List</label>
+                            <div class="scheduler-form-help">Choose whether this task should appear in the sidebar task list.</div>
+                        </div>
+                        <div>
+                            <div class="scheduler-state-selector">
+                                <span class="scheduler-status-badge scheduler-status-idle"
+                                      :class="{'scheduler-status-selected': $store.schedulerStore.editingTask.show_in_task_list === true}"
+                                      @click="$store.schedulerStore.editingTask.show_in_task_list = true">Show</span>
+                                <span class="scheduler-status-badge scheduler-status-disabled"
+                                      :class="{'scheduler-status-selected': $store.schedulerStore.editingTask.show_in_task_list === false}"
+                                      @click="$store.schedulerStore.editingTask.show_in_task_list = false">Hide</span>
+                            </div>
+                            <div class="scheduler-state-explanation">
+                                <span x-show="$store.schedulerStore.editingTask.show_in_task_list === true"><strong>Show</strong>: This task appears in the sidebar task list.</span>
+                                <span x-show="$store.schedulerStore.editingTask.show_in_task_list === false"><strong>Hide</strong>: This task is kept out of the sidebar task list.</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="scheduler-form-field" x-show="$store.schedulerStore.isCreating">
                         <div class="label-help-wrapper">
                             <label class="scheduler-form-label">State</label>
@@ -264,6 +285,27 @@
                             <span class="project-color-ball"
                                   :style="$store.schedulerStore.editingTask.project?.color ? { backgroundColor: $store.schedulerStore.editingTask.project.color } : { border: '1px solid var(--color-border)' }"></span>
                             <span x-text="$store.schedulerStore.formatProjectLabel($store.schedulerStore.editingTask.project)"></span>
+                        </div>
+                    </div>
+
+                    <div class="scheduler-form-field">
+                        <div class="label-help-wrapper">
+                            <label class="scheduler-form-label">Sidebar Task List</label>
+                            <div class="scheduler-form-help">Enable or disable this task in the sidebar task list.</div>
+                        </div>
+                        <div>
+                            <div class="scheduler-state-selector">
+                                <span class="scheduler-status-badge scheduler-status-idle"
+                                      :class="{'scheduler-status-selected': $store.schedulerStore.editingTask.show_in_task_list === true}"
+                                      @click="$store.schedulerStore.editingTask.show_in_task_list = true">Show</span>
+                                <span class="scheduler-status-badge scheduler-status-disabled"
+                                      :class="{'scheduler-status-selected': $store.schedulerStore.editingTask.show_in_task_list === false}"
+                                      @click="$store.schedulerStore.editingTask.show_in_task_list = false">Hide</span>
+                            </div>
+                            <div class="scheduler-state-explanation">
+                                <span x-show="$store.schedulerStore.editingTask.show_in_task_list === true"><strong>Show</strong>: This task is shown in the sidebar.</span>
+                                <span x-show="$store.schedulerStore.editingTask.show_in_task_list === false"><strong>Hide</strong>: This task is hidden from the sidebar.</span>
+                            </div>
                         </div>
                     </div>
 

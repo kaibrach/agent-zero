@@ -1,4 +1,4 @@
-# Agent Zero Component System
+# Nova Component System
 
 > Generated from codebase reconnaissance on 2026-01-10
 > Scope: `webui/components/` - Self-contained Alpine.js component architecture

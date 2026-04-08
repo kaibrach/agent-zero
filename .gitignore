@@ -54,3 +54,9 @@ agent_history.gif
 webui-nova-old/**
 plugins-nova/**
 run_nova_old.py
+docs/branding/nova-wordmark-brutalist.svg
+docs/branding/nova-wordmark-celestial.svg
+docs/branding/nova-wordmark-engineered.svg
+docs/branding/nova-wordmark-luxe-minimal.svg
+docs/branding/nova-wordmark-variants.md
+docs/branding/nova-wordmark.svg

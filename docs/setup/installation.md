@@ -6,7 +6,7 @@
 
 ## Quick Start (Recommended)
 
-The install script is the fastest way to get Agent Zero running. It handles Docker, image pulling, and container setup automatically.
+The install script is the fastest way to get Nova running. It handles Docker, image pulling, and container setup automatically.
 
 **macOS / Linux:**
 ```bash
@@ -23,11 +23,11 @@ irm https://ps.agent-zero.ai | iex
 docker run -p 80:80 agent0ai/agent-zero
 ```
 
-Once the install completes, open the URL shown in your terminal to access the Web UI. Follow the prompts in the CLI to set your port and authentication, complete onboarding, add your API key, then continue to [Step 3: Configure Agent Zero](#step-3-configure-agent-zero).
+Once the install completes, open the URL shown in your terminal to access the Web UI. Follow the prompts in the CLI to set your port and authentication, complete onboarding, add your API key, then continue to [Step 3: Configure Nova](#step-3-configure-agent-zero).
 
 ---
 
-## How to Update Agent Zero
+## How to Update Nova
 
 ### Self Update (Recommended)
 
@@ -43,7 +43,7 @@ For technical details of the updater, see [Self Update](../guides/self-update.md
 
 ### Updating from Pre-v0.9.8
 
-If you are upgrading from an older version of Agent Zero (v0.9.8 or earlier) to v1.1 or newer, the architecture has fundamentally changed. You cannot use the in-app Self Update. Instead, follow these steps to migrate your data:
+If you are upgrading from an older version of Nova (v0.9.8 or earlier) to v1.1 or newer, the architecture has fundamentally changed. You cannot use the in-app Self Update. Instead, follow these steps to migrate your data:
 
 1. **Backup your existing `usr/` directory** (which contains your settings, projects, memory, and custom plugins).
 2. **Run the new install script** to set up the new Docker-based architecture:
@@ -79,7 +79,7 @@ Follow the steps below to install Docker and run the image by hand.
 
 ### Step 1: Install Docker Desktop
 
-Docker Desktop provides the runtime environment for Agent Zero, ensuring consistent behavior and security across platforms. The entire framework runs within a Docker container, providing isolation and easy deployment.
+Docker Desktop provides the runtime environment for Nova, ensuring consistent behavior and security across platforms. The entire framework runs within a Docker container, providing isolation and easy deployment.
 
 **Choose your operating system:**
 
@@ -134,7 +134,7 @@ Once installed, launch Docker Desktop from your Start menu or desktop shortcut.
 
 ✅ **Docker is now installed!** 
 
-Continue to [Step 2: Run Agent Zero](#step-2-run-agent-zero)
+Continue to [Step 2: Run Nova](#step-2-run-agent-zero)
 
 ---
 
@@ -171,7 +171,7 @@ Open Docker Desktop from your Applications folder.
 
 ✅ **Docker is now installed!** 
 
-Continue to [Step 2: Run Agent Zero](#step-2-run-agent-zero)
+Continue to [Step 2: Run Nova](#step-2-run-agent-zero)
 
 ---
 
@@ -215,9 +215,9 @@ If you installed Docker Desktop, launch it from your applications menu.
 
 ---
 
-### Step 2: Run Agent Zero
+### Step 2: Run Nova
 
-#### 2.1. Pull the Agent Zero Docker Image
+#### 2.1. Pull the Nova Docker Image
 
 **Using Docker Desktop GUI:**
 
@@ -235,7 +235,7 @@ docker pull agent0ai/agent-zero
 
 #### 2.2. (Optional) Map Folders for Persistence
 
-Choose or create a folder on your computer where Agent Zero will save its data. 
+Choose or create a folder on your computer where Nova will save its data. 
 
 Setting up persistence is needed only if you want your data and files to remain available even after you delete the container.
 
@@ -250,7 +250,7 @@ You can map just the `/a0/usr` directory (recommended) or individual subfolders 
 > Do **not** map the entire `/a0` directory: it contains the application code and can break upgrades.
 
 > [!TIP]
-> Choose a location that's easy to access and backup. All your Agent Zero data will be directly accessible in this directory.
+> Choose a location that's easy to access and backup. All your Nova data will be directly accessible in this directory.
 
 #### 2.3. Run the Container
 
@@ -275,7 +275,7 @@ The framework will take a few seconds to initialize. Find the mapped port in Doc
 
 ![docker logs](../res/setup/5-docker-click-to-open.png)
 
-Open `http://localhost:<PORT>` in your browser. The Web UI will open - Agent Zero is ready for configuration!
+Open `http://localhost:<PORT>` in your browser. The Web UI will open - Nova is ready for configuration!
 
 ![docker ui](../res/setup/6-docker-a0-running-new.png)
 
@@ -283,7 +283,7 @@ Open `http://localhost:<PORT>` in your browser. The Web UI will open - Agent Zer
 > You can also access the Web UI by clicking the port link directly under the container ID in Docker Desktop.
 
 > [!NOTE]
-> After starting the container, you'll find all Agent Zero files in your chosen directory. You can access and edit these files directly on your machine, and the changes will be immediately reflected in the running container.
+> After starting the container, you'll find all Nova files in your chosen directory. You can access and edit these files directly on your machine, and the changes will be immediately reflected in the running container.
 
 **Running A0 using Terminal?**
 
@@ -295,13 +295,13 @@ docker run -p 0:80 -v /path/to/your/work_dir:/a0/usr agent0ai/agent-zero
 
 ---
 
-## Step 3: Configure Agent Zero
+## Step 3: Configure Nova
 
 The UI will show a warning banner "Missing LLM API Key for current settings". Click on `Add your API key` to enter Settings and start configuring A0.
 
 ### Settings Configuration
 
-Agent Zero provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings" button with a gear icon in the sidebar.
+Nova provides a comprehensive settings interface to customize various aspects of its functionality. Access the settings by clicking the "Settings" button with a gear icon in the sidebar.
 
 ### Agent Configuration
 
@@ -350,7 +350,7 @@ Use `claude-sonnet-4-5` for Anthropic, but use `anthropic/claude-sonnet-4-5` for
 - **Model Name:** Select the specific embedding model (e.g., text-embedding-3-small)
 
 > [!NOTE]
-> Agent Zero uses a local embedding model by default (runs on CPU), but you can switch to OpenAI embeddings like `text-embedding-3-small` or `text-embedding-3-large` if preferred.
+> Nova uses a local embedding model by default (runs on CPU), but you can switch to OpenAI embeddings like `text-embedding-3-small` or `text-embedding-3-large` if preferred.
 
 ### Speech to Text Options
 
@@ -363,13 +363,13 @@ Use `claude-sonnet-4-5` for Anthropic, but use `anthropic/claude-sonnet-4-5` for
 Configure API keys for various service providers directly within the Web UI. Click `Save` to confirm your settings.
 
 > [!NOTE]
-> **OpenAI API vs Plus subscription:** A ChatGPT Plus subscription does not include API credits. You must provide a separate API key for OpenAI usage in Agent Zero.
+> **OpenAI API vs Plus subscription:** A ChatGPT Plus subscription does not include API credits. You must provide a separate API key for OpenAI usage in Nova.
 
 > [!TIP]
 > For OpenAI-compatible providers (e.g., custom gateways or Z.AI/GLM), add the API key under **External Services → Other OpenAI-compatible API keys**, then select **OpenAI Compatible** as the provider in model settings.
 
 > [!CAUTION]
-> **GitHub Copilot Provider:** When using the GitHub Copilot provider, after selecting the model and entering your first prompt, the OAuth login procedure will begin. You'll find the authentication code and link in the output logs. Complete the authentication process by following the provided link and entering the code, then you may continue using Agent Zero.
+> **GitHub Copilot Provider:** When using the GitHub Copilot provider, after selecting the model and entering your first prompt, the OAuth login procedure will begin. You'll find the authentication code and link in the output logs. Complete the authentication process by following the provided link and entering the code, then you may continue using Nova.
 
 ### Authentication
 
@@ -396,7 +396,7 @@ Learn more about Remote Function Calls in the [Development Setup guide](dev-setu
 
 ## Choosing Your LLMs
 
-The Settings page is the control center for selecting the Large Language Models (LLMs) that power Agent Zero. You can choose different LLMs for different roles:
+The Settings page is the control center for selecting the Large Language Models (LLMs) that power Nova. You can choose different LLMs for different roles:
 
 | LLM Role | Description |
 | --- | --- |
@@ -508,7 +508,7 @@ ollama pull <model-name>
 
 Replace `<model-name>` with the name of the model you want to use. For example: `ollama pull mistral-large`
 
-### Configuring Ollama in Agent Zero
+### Configuring Ollama in Nova
 
 1. Once you've downloaded your model(s), select it in the Settings page of the GUI.
 2. Within the Chat model, Utility model, or Embedding model section, choose **Ollama** as provider.
@@ -519,7 +519,7 @@ Replace `<model-name>` with the name of the model you want to use. For example: 
 ![ollama](../res/setup/settings/4-local-models.png)
 
 > [!NOTE]
-> If Agent Zero runs in Docker and Ollama runs on the host, ensure port **11434** is reachable from the container. If both services are in the same Docker network, you can use `http://<container_name>:11434` instead of `host.docker.internal`.
+> If Nova runs in Docker and Ollama runs on the host, ensure port **11434** is reachable from the container. If both services are in the same Docker network, you can use `http://<container_name>:11434` instead of `host.docker.internal`.
 
 ### Managing Downloaded Models
 
@@ -540,19 +540,19 @@ ollama rm <model-name>
 
 ---
 
-## Using Agent Zero on Your Mobile Device
+## Using Nova on Your Mobile Device
 
-Agent Zero can be accessed from mobile devices and other computers using the built-in **Tunnel feature**.
+Nova can be accessed from mobile devices and other computers using the built-in **Tunnel feature**.
 
 ### Recommended: Using Tunnel (Remote Access)
 
-The Tunnel feature allows secure access to your Agent Zero instance from anywhere:
+The Tunnel feature allows secure access to your Nova instance from anywhere:
 
 1. Open Settings in the Web UI
 2. Navigate to the **External Services** tab
 3. Click on **Flare Tunnel** in the navigation menu
 4. Click **Create Tunnel** to generate a secure HTTPS URL
-5. Share this URL to access Agent Zero from any device
+5. Share this URL to access Nova from any device
 
 > [!IMPORTANT]
 > **Security:** Always set a username and password in Settings → Authentication before creating a tunnel to secure your instance on the internet.
@@ -570,13 +570,13 @@ If you prefer to keep access limited to your local network:
 > [!TIP]
 > Find your computer's IP address with `ipconfig` (Windows) or `ifconfig`/`ip addr` (macOS/Linux). It's usually in the format `192.168.x.x` or `10.0.x.x`.
 
-For developers or users who need to run Agent Zero directly on their system, see the [In-Depth Guide for Full Binaries Installation](dev-setup.md).
+For developers or users who need to run Nova directly on their system, see the [In-Depth Guide for Full Binaries Installation](dev-setup.md).
 
 ---
 
 ## Advanced: Automated Configuration via Environment Variables
 
-Agent Zero settings can be automatically configured using environment variables with the `A0_SET_` prefix in your `.env` file. This enables automated deployments without manual configuration.
+Nova settings can be automatically configured using environment variables with the `A0_SET_` prefix in your `.env` file. This enables automated deployments without manual configuration.
 
 **Usage:**
 
@@ -628,7 +628,7 @@ If you are migrating from older, non-Docker setups, A0 handles the migration of 
 
 ## Conclusion
 
-After following the instructions for your specific operating system, you should have Agent Zero successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents.
+After following the instructions for your specific operating system, you should have Nova successfully installed and running. You can now start exploring the framework's capabilities and experimenting with creating your own intelligent agents.
 
 **Next Steps:**
 
@@ -636,4 +636,4 @@ After following the instructions for your specific operating system, you should 
 - For development setup and extensions, see the [Development Setup Guide](dev-setup.md)
 - For remote access via tunnel, see [Remote Access via Tunneling](../guides/usage.md#remote-access-via-tunneling)
 
-If you encounter any issues during the installation process, please consult the [Troubleshooting section](../guides/troubleshooting.md) of this documentation or refer to the Agent Zero [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community for assistance.
+If you encounter any issues during the installation process, please consult the [Troubleshooting section](../guides/troubleshooting.md) of this documentation or refer to the Nova [Skool](https://www.skool.com/agent-zero) or [Discord](https://discord.gg/B8KZKNsPpj) community for assistance.

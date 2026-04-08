@@ -1,5 +1,5 @@
 # Use the pre-built base image for A0
-# FROM agent-zero-base:local
+#FROM agent-zero-base:local
 FROM agent0ai/agent-zero-base:latest
 
 # Set BRANCH to "local" if not provided
@@ -14,8 +14,12 @@ COPY ./ /git/agent-zero
 # pre installation steps
 RUN bash /ins/pre_install.sh $BRANCH
 
+RUN bash /ins/install_A0.sh $BRANCH && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+
 # install A0
-RUN bash /ins/install_A0.sh $BRANCH
+# RUN bash /ins/install_A0.sh $BRANCH
 
 # install additional software
 RUN bash /ins/install_additional.sh $BRANCH

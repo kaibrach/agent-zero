@@ -153,7 +153,8 @@ class SchedulerTool(Tool):
         prompt: str = kwargs.get("prompt", "")
         attachments: list[str] = kwargs.get("attachments", [])
         schedule: dict[str, str] = kwargs.get("schedule", {})
-        dedicated_context: bool = kwargs.get("dedicated_context", False)
+        dedicated_context: bool = kwargs.get("dedicated_context", True)
+        show_in_task_list: bool | None = kwargs.get("show_in_task_list", None)
 
         task_schedule = TaskSchedule(
             minute=schedule.get("minute", "*"),
@@ -177,6 +178,7 @@ class SchedulerTool(Tool):
             attachments=attachments,
             schedule=task_schedule,
             context_id=None if dedicated_context else self.agent.context.id,
+            show_in_task_list=show_in_task_list,
             project_name=project_slug,
             project_color=project_color,
         )
@@ -189,7 +191,8 @@ class SchedulerTool(Tool):
         prompt: str = kwargs.get("prompt", "")
         attachments: list[str] = kwargs.get("attachments", [])
         token: str = str(random.randint(1000000000000000000, 9999999999999999999))
-        dedicated_context: bool = kwargs.get("dedicated_context", False)
+        dedicated_context: bool = kwargs.get("dedicated_context", True)
+        show_in_task_list: bool | None = kwargs.get("show_in_task_list", None)
 
         project_slug, project_color = self._resolve_project_metadata()
 
@@ -200,6 +203,7 @@ class SchedulerTool(Tool):
             attachments=attachments,
             token=token,
             context_id=None if dedicated_context else self.agent.context.id,
+            show_in_task_list=show_in_task_list,
             project_name=project_slug,
             project_color=project_color,
         )
@@ -212,7 +216,8 @@ class SchedulerTool(Tool):
         prompt: str = kwargs.get("prompt", "")
         attachments: list[str] = kwargs.get("attachments", [])
         plan: list[str] = kwargs.get("plan", [])
-        dedicated_context: bool = kwargs.get("dedicated_context", False)
+        dedicated_context: bool = kwargs.get("dedicated_context", True)
+        show_in_task_list: bool | None = kwargs.get("show_in_task_list", None)
 
         # Convert plan to list of datetimes in UTC
         todo: list[datetime] = []
@@ -239,6 +244,7 @@ class SchedulerTool(Tool):
             attachments=attachments,
             plan=task_plan,
             context_id=None if dedicated_context else self.agent.context.id,
+            show_in_task_list=show_in_task_list,
             project_name=project_slug,
             project_color=project_color
         )

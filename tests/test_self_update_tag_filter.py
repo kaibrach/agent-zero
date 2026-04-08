@@ -493,7 +493,7 @@ def test_self_update_frontend_uses_preloaded_select():
     assert "tag: \"\"," in content
     assert "await this.fetchTags();" in content
     assert '"Preparing update"' in content
-    assert '"Saving the request and asking Agent Zero to restart."' in content
+    assert '"Saving the request and asking Nova to restart."' in content
     assert "Release tag must use the format vX.Y." in content
     assert "Release tag must be v1.0 or newer." in content
     assert "isLatestSelectorTag(value)" in content
@@ -515,7 +515,7 @@ def test_self_update_frontend_uses_preloaded_select():
     assert "resetRestartState()" in content
     assert "restartRequestStarted" in content
     assert "restartResponse.status >= 500" in content
-    assert "while Agent Zero was shutting down" in content
+    assert "while Nova was shutting down" in content
     assert "await notificationStore.frontendWarning(" not in content
     assert "status-pill-error" in content
     assert "status-pill-success" in content
@@ -527,7 +527,7 @@ def test_self_update_frontend_uses_preloaded_select():
     assert 'const response = await fetch("/api/health"' in content
     assert "if (response.ok && observedBackendUnavailable)" in content
     assert "window.location.reload();" in content
-    assert "Waiting for Agent Zero to disconnect before reloading the page." in content
+    assert "Waiting for Nova to disconnect before reloading the page." in content
     assert "SELF_UPDATE_RETURN_URL_KEY" not in content
     assert "saveReturnUrl(" not in content
     assert "getSavedReturnUrl(" not in content
@@ -580,7 +580,7 @@ def test_self_update_modal_uses_standard_select_and_manual_backup():
     assert "requires a newer" in content
     assert "Docker image." in content
     assert "minor release line" in content
-    assert "Agent Zero self-update inside the existing image." in content
+    assert "Nova self-update inside the existing image." in content
     assert "On development branches you may also see versions like <code>v1.5+2</code>" in content
     assert "This suffix is not used on" in content
     assert "Only versions from the current major release line are listed here." in content

@@ -61,6 +61,7 @@ const TASK_TYPES = ["scheduled", "adhoc", "planned"];
  * @property {string} token
  * @property {SchedulerProject|null} project
  * @property {boolean} dedicated_context
+ * @property {boolean} show_in_task_list
  * @property {string[]} attachments
  * @property {string} system_prompt
  * @property {string} prompt
@@ -105,6 +106,7 @@ const defaultEditingTask = (overrides = {}) => ({
   attachments: [],
   project: null,
   dedicated_context: true,
+  show_in_task_list: true,
   ...overrides,
 });
 
@@ -219,6 +221,12 @@ function composeEditingTask(task = {}) {
     project: base.project || extractProjectInfo(base) || null,
     dedicated_context:
       typeof base.dedicated_context === "boolean" ? base.dedicated_context : true,
+    show_in_task_list:
+      typeof base.show_in_task_list === "boolean"
+        ? base.show_in_task_list
+        : typeof base.dedicated_context === "boolean"
+          ? base.dedicated_context
+          : true,
     state: base.state || DEFAULT_TASK_STATE,
   };
 }
@@ -237,6 +245,7 @@ function buildPayloadFromEditingTask(editingTask, { isCreating = false } = {}) {
     timezone: getUserTimezone(),
     attachments: normalizeAttachments(editingTask.attachments),
     dedicated_context: editingTask.dedicated_context,
+    show_in_task_list: Boolean(editingTask.show_in_task_list),
   };
 
   if (editingTask.type === "scheduled") {

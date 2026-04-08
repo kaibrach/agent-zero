@@ -1,6 +1,6 @@
 # Email Integration
 
-Communicate with Agent Zero through email inboxes and send replies back over SMTP.
+Communicate with Nova through email inboxes and send replies back over SMTP.
 
 ## What It Does
 
@@ -49,4 +49,4 @@ It supports both:
 
 - **Name**: `_email_integration`
 - **Title**: `Email Integration`
-- **Description**: Communicate with Agent Zero via email. Supports IMAP/Exchange inbox polling with SMTP replies.
+- **Description**: Communicate with Nova via email. Supports IMAP/Exchange inbox polling with SMTP replies.

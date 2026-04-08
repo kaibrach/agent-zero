@@ -1,6 +1,6 @@
 ---
 name: a0-debug-plugin
-description: Diagnose and fix Agent Zero plugin problems. Covers plugin not appearing, won't enable, API endpoints not responding, frontend store errors, extension point injection, settings resolution, hooks.py issues, and log inspection. Use when a plugin is not working, not loading, crashing, missing from the list, or behaving unexpectedly.
+description: Diagnose and fix Nova plugin problems. Covers plugin not appearing, won't enable, API endpoints not responding, frontend store errors, extension point injection, settings resolution, hooks.py issues, and log inspection. Use when a plugin is not working, not loading, crashing, missing from the list, or behaving unexpectedly.
 version: 1.0.0
 tags: ["plugins", "debug", "troubleshoot", "fix", "diagnose", "error", "broken"]
 trigger_patterns:
@@ -16,7 +16,7 @@ trigger_patterns:
   - "fix plugin"
 ---
 
-# Agent Zero Plugin Debugger
+# Nova Plugin Debugger
 
 Work through these checks in order. Stop at the first failure and fix it before continuing.
 
@@ -59,7 +59,7 @@ ls -la /a0/usr/agents/default/plugins/<name>/.toggle-* 2>/dev/null
 
 - Verify the handler file is in `api/` and subclasses `ApiHandler`
 - Route format: `POST /api/plugins/<plugin_name>/<handler_filename_without_.py>`
-- Check for Python import errors on startup (check Agent Zero logs)
+- Check for Python import errors on startup (check Nova logs)
 - Verify correct import paths: `from agent import AgentContext` not `from helpers.context import AgentContext`
 
 ```bash
@@ -140,7 +140,7 @@ print('Done')
 
 ---
 
-## 8. Check Agent Zero logs
+## 8. Check Nova logs
 
 ```bash
 # Find recent log files
@@ -153,14 +153,14 @@ Plugin-related errors appear as Python tracebacks mentioning the plugin path.
 
 ## How Plugin Discovery Works
 
-1. Agent Zero walks `usr/plugins/` then `plugins/` at startup
+1. Nova walks `usr/plugins/` then `plugins/` at startup
 2. Any directory containing `plugin.yaml` is treated as a plugin
 3. `usr/plugins/<name>` takes priority over `plugins/<name>` when both exist (user overrides core)
 4. Toggle state is evaluated: `.toggle-0` disables, `.toggle-1` enables, no file = enabled by default
 5. Enabled plugins have their `extensions/`, `api/`, `tools/`, etc. registered into the runtime, including both named extension points and implicit `_functions/...` extensible hooks
 
 Plugins are re-scanned when:
-- Agent Zero restarts
+- Nova restarts
 - A plugin is installed/removed via the installer
 - The "Refresh" action is triggered in the Plugins UI
 

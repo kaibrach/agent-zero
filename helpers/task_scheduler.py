@@ -125,6 +125,7 @@ class BaseTask(BaseModel):
     system_prompt: str
     prompt: str
     attachments: list[str] = Field(default_factory=list)
+    show_in_task_list: bool | None = Field(default=None)
     project_name: str | None = Field(default=None)
     project_color: str | None = Field(default=None)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
@@ -186,6 +187,11 @@ class BaseTask(BaseModel):
 
     def is_dedicated(self) -> bool:
         return self.context_id == self.uuid
+
+    def is_visible_in_task_list(self) -> bool:
+        if self.show_in_task_list is not None:
+            return self.show_in_task_list
+        return self.is_dedicated()
 
     def get_next_run_minutes(self) -> int | None:
         next_run = self.get_next_run()
@@ -250,6 +256,7 @@ class AdHocTask(BaseTask):
         token: str,
         attachments: list[str] = list(),
         context_id: str | None = None,
+        show_in_task_list: bool | None = None,
         project_name: str | None = None,
         project_color: str | None = None
     ):
@@ -259,6 +266,7 @@ class AdHocTask(BaseTask):
                    attachments=attachments,
                    token=token,
                    context_id=context_id,
+                   show_in_task_list=show_in_task_list,
                    project_name=project_name,
                    project_color=project_color)
 
@@ -299,6 +307,7 @@ class ScheduledTask(BaseTask):
         attachments: list[str] = list(),
         context_id: str | None = None,
         timezone: str | None = None,
+        show_in_task_list: bool | None = None,
         project_name: str | None = None,
         project_color: str | None = None,
     ):
@@ -314,6 +323,7 @@ class ScheduledTask(BaseTask):
                    attachments=attachments,
                    schedule=schedule,
                    context_id=context_id,
+                   show_in_task_list=show_in_task_list,
                    project_name=project_name,
                    project_color=project_color)
 
@@ -380,6 +390,7 @@ class PlannedTask(BaseTask):
         plan: TaskPlan,
         attachments: list[str] = list(),
         context_id: str | None = None,
+        show_in_task_list: bool | None = None,
         project_name: str | None = None,
         project_color: str | None = None
     ):
@@ -389,6 +400,7 @@ class PlannedTask(BaseTask):
                    plan=plan,
                    attachments=attachments,
                    context_id=context_id,
+                   show_in_task_list=show_in_task_list,
                    project_name=project_name,
                    project_color=project_color)
 
@@ -1128,6 +1140,7 @@ def serialize_task(task: Union[ScheduledTask, AdHocTask, PlannedTask]) -> Dict[s
         "system_prompt": task.system_prompt,
         "prompt": task.prompt,
         "attachments": task.attachments,
+        "show_in_task_list": task.is_visible_in_task_list(),
         "project_name": task.project_name,
         "project_color": task.project_color,
         "created_at": serialize_datetime(task.created_at),
@@ -1200,6 +1213,7 @@ def deserialize_task(task_data: Dict[str, Any], task_class: Optional[Type[T]] = 
         "system_prompt": task_data.get("system_prompt", ""),
         "prompt": task_data.get("prompt", ""),
         "attachments": task_data.get("attachments", []),
+        "show_in_task_list": task_data.get("show_in_task_list"),
         "project_name": task_data.get("project_name"),
         "project_color": task_data.get("project_color"),
         "created_at": parse_datetime(task_data.get("created_at")),

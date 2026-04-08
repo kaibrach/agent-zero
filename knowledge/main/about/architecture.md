@@ -1,4 +1,4 @@
-# Agent Zero - Internal Architecture
+# Nova - Internal Architecture
 
 ## The Agent Loop (Monologue Cycle)
 

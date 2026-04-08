@@ -1,6 +1,6 @@
 ---
 name: a0-create-plugin
-description: Create, extend, or modify Agent Zero plugins. Follows strict full-stack conventions (usr/plugins, plugin.yaml, Store Gating, AgentContext, plugin settings). Use for UI hooks, API handlers, lifecycle extensions, or plugin settings UI.
+description: Create, extend, or modify Nova plugins. Follows strict full-stack conventions (usr/plugins, plugin.yaml, Store Gating, AgentContext, plugin settings). Use for UI hooks, API handlers, lifecycle extensions, or plugin settings UI.
 version: 1.0.0
 tags: ["plugins", "create", "build", "develop", "extend"]
 trigger_patterns:
@@ -12,7 +12,7 @@ trigger_patterns:
   - "plugin template"
 ---
 
-# Agent Zero Plugin Development
+# Nova Plugin Development
 
 > [!IMPORTANT]
 > Always create new plugins in `/a0/usr/plugins/<plugin_name>/`. The `/a0/plugins/` directory is reserved for core system plugins.
@@ -32,7 +32,7 @@ Primary references:
 
 Before starting, ask the user one question:
 
-> "Should this plugin be **local only** (stays in your Agent Zero installation) or a **community plugin** (published to the Plugin Index so others can install it)?"
+> "Should this plugin be **local only** (stays in your Nova installation) or a **community plugin** (published to the Plugin Index so others can install it)?"
 
 - **Local plugin**: Create it in `/a0/usr/plugins/<plugin_name>/`. No repository needed. Skip to the manifest section below.
 - **Community plugin**: The plugin must live in its own GitHub repository (runtime manifest at the repo root), and then a separate index submission PR is made to https://github.com/agent0ai/a0-plugins. Guide the user through both steps.
@@ -277,7 +277,7 @@ Users trigger it from the Plugins UI. Treat it as a manual, rerunnable operation
 ## Runtime Hooks (`hooks.py`)
 If your plugin needs framework-internal hook points, add a `hooks.py` file at the plugin root. The framework can call exported functions by name via `helpers.plugins.call_plugin_hook(...)`.
 
-- `hooks.py` runs inside the **Agent Zero framework runtime**, not the separate agent execution environment.
+- `hooks.py` runs inside the **Nova framework runtime**, not the separate agent execution environment.
 - Use it for things like install hooks, pre-update hooks, plugin registration work, cache setup, file preparation, or other internal framework operations.
 - Current built-in usage:
   - the plugin installer calls `install()` in `hooks.py` after placing a plugin in `usr/plugins/`
@@ -286,7 +286,7 @@ If your plugin needs framework-internal hook points, add a `hooks.py` file at th
 - Hooks should be reversible and cleanup-safe. Prefer framework-managed state and plugin-owned paths over permanent system modifications.
 
 ### Environment targeting rules
-- If `hooks.py` runs `sys.executable -m pip install ...`, it installs into the same Python environment that is running Agent Zero.
+- If `hooks.py` runs `sys.executable -m pip install ...`, it installs into the same Python environment that is running Nova.
 - That is correct for dependencies needed by the plugin inside the framework runtime.
 - If the dependency is meant for the separate agent runtime or for OS-level tools, do **not** assume the current environment is correct.
 
@@ -374,4 +374,4 @@ For a fully guided contribution flow (including git operations), read `/a0/skill
 
 The **Plugin Index** is the community hub at https://github.com/agent0ai/a0-plugins.
 
-Agent Zero now exposes indexed plugins through the built-in **Plugin Hub**. Users can open it from the **Plugins** dialog either through the **Browse** tab or through the **Install** button, then inspect plugin details and install directly from the UI.
+Nova now exposes indexed plugins through the built-in **Plugin Hub**. Users can open it from the **Plugins** dialog either through the **Browse** tab or through the **Install** button, then inspect plugin details and install directly from the UI.

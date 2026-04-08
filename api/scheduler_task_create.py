@@ -28,6 +28,7 @@ class SchedulerTaskCreate(ApiHandler):
         system_prompt = input.get("system_prompt", "")
         prompt = input.get("prompt")
         attachments = input.get("attachments", [])
+        show_in_task_list = input.get("show_in_task_list") if "show_in_task_list" in input else None
 
         requested_project_slug = input.get("project_name")
         if isinstance(requested_project_slug, str):
@@ -99,6 +100,7 @@ class SchedulerTaskCreate(ApiHandler):
                 attachments=attachments,
                 context_id=task_context_id,
                 timezone=timezone,
+                show_in_task_list=show_in_task_list,
                 project_name=project_slug,
                 project_color=project_color,
             )
@@ -117,6 +119,7 @@ class SchedulerTaskCreate(ApiHandler):
                 plan=task_plan,
                 attachments=attachments,
                 context_id=task_context_id,
+                show_in_task_list=show_in_task_list,
                 project_name=project_slug,
                 project_color=project_color,
             )
@@ -130,6 +133,7 @@ class SchedulerTaskCreate(ApiHandler):
                 token=token,
                 attachments=attachments,
                 context_id=task_context_id,
+                show_in_task_list=show_in_task_list,
                 project_name=project_slug,
                 project_color=project_color,
             )

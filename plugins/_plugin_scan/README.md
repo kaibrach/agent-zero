@@ -1,6 +1,6 @@
 # Plugin Scanner
 
-Run an LLM-guided security review of third-party Agent Zero plugins from a Git repository.
+Run an LLM-guided security review of third-party Nova plugins from a Git repository.
 
 ## What It Does
 

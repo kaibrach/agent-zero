@@ -1,6 +1,6 @@
 ---
 name: a0-review-plugin
-description: Full audit of Agent Zero plugins in usr/plugins/. Reviews manifest validity, directory structure, code patterns (Store Gating, notifications, imports), security, and duplicate detection against the community index. Use when asked to review, audit, validate, or check an existing plugin before using or contributing it.
+description: Full audit of Nova plugins in usr/plugins/. Reviews manifest validity, directory structure, code patterns (Store Gating, notifications, imports), security, and duplicate detection against the community index. Use when asked to review, audit, validate, or check an existing plugin before using or contributing it.
 version: 1.0.0
 tags: ["plugins", "review", "audit", "validate", "security", "checklist"]
 trigger_patterns:
@@ -13,7 +13,7 @@ trigger_patterns:
   - "plugin checklist"
 ---
 
-# Agent Zero Plugin Review
+# Nova Plugin Review
 
 Full-audit workflow for plugins in `/a0/usr/plugins/<name>/`. Run all 4 phases in order and report findings grouped by phase. Mark each item PASS, FAIL, or WARN.
 
@@ -54,7 +54,7 @@ Inspect the plugin directory layout:
 - [ ] If `webui/config.html` exists: plugin must declare at least one `settings_sections` entry
 - [ ] If `hooks.py` exists: review whether it defines the lifecycle hook functions the plugin appears to rely on, especially `install` and `pre_update` when the plugin needs install-time or update-time behavior
 - [ ] If `execute.py` exists: check it has a `main()` function and `if __name__ == "__main__": sys.exit(main())`
-- [ ] `LICENSE` at plugin root: Agent Zero does not require it for local plugins, but it is **required** at the repo root before submitting to the Plugin Index. If missing → **WARN** — `LICENSE absent — required for community contribution (Plugin Index); optional for local-only use`
+- [ ] `LICENSE` at plugin root: Nova does not require it for local plugins, but it is **required** at the repo root before submitting to the Plugin Index. If missing → **WARN** — `LICENSE absent — required for community contribution (Plugin Index); optional for local-only use`
 - [ ] `default_config.yaml` (if present): valid YAML
 - [ ] No unexpected top-level entries (WARN for anything outside the standard layout)
 
@@ -64,7 +64,7 @@ Standard top-level layout: `plugin.yaml`, `execute.py`, `hooks.py`, `default_con
 
 ## Phase 3: Code Pattern Review
 
-Read source files and check for violations of Agent Zero conventions.
+Read source files and check for violations of Nova conventions.
 
 ### Frontend (HTML/JS)
 

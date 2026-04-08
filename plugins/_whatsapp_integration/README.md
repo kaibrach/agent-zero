@@ -1,6 +1,6 @@
 # WhatsApp Integration Plugin
 
-Communicate with Agent Zero via WhatsApp using a Baileys-based Node.js bridge.
+Communicate with Nova via WhatsApp using a Baileys-based Node.js bridge.
 
 ## Requirements
 
@@ -26,7 +26,7 @@ Dependencies are auto-installed on first bridge start if missing.
 4. Send a message from an allowed number to start a chat
 
 The WhatsApp session persists across restarts in `tmp/whatsapp/session/`. No re-pairing needed unless you disconnect via settings.
-Be careful: if you use your personal number and leave `allowed_numbers` open, other people could misuse your Agent Zero.
+Be careful: if you use your personal number and leave `allowed_numbers` open, other people could misuse your Nova.
 
 ## Configuration
 
@@ -59,5 +59,5 @@ whatsapp-bridge/bridge.js  (Node.js subprocess)
     ↕ (HTTP API on localhost)
 Python helpers (wa_client, handler, bridge_manager)
     ↕ (Framework extensions)
-Agent Zero
+Nova
 ```

@@ -1,6 +1,6 @@
 ---
 name: a0-manage-plugin
-description: Manage Agent Zero plugins lifecycle: browse the Plugin Hub, scan for security, install from Git/ZIP/Plugin Hub, update, uninstall, enable, disable, debug, and troubleshoot. Use when asked to install, update, uninstall, remove, scan, find, search, enable, disable, debug, or troubleshoot a plugin.
+description: Manage Nova plugins lifecycle: browse the Plugin Hub, scan for security, install from Git/ZIP/Plugin Hub, update, uninstall, enable, disable, debug, and troubleshoot. Use when asked to install, update, uninstall, remove, scan, find, search, enable, disable, debug, or troubleshoot a plugin.
 version: 1.2.0
 tags: ["plugins", "install", "uninstall", "update", "scan", "security", "debug", "troubleshoot", "plugin-hub", "manage"]
 trigger_patterns:
@@ -21,7 +21,7 @@ trigger_patterns:
   - "list plugins"
 ---
 
-# Agent Zero Plugin Management
+# Nova Plugin Management
 
 ## Action Routing
 
@@ -63,7 +63,7 @@ Each entry in `plugins` is keyed by plugin name with fields: `title`, `descripti
 ls /a0/usr/plugins/
 ```
 
-**Alternatively via UI**: Open the Plugins dialog in Agent Zero and switch to the **Browse** tab (or click **Install** in the toolbar to open the Plugin Hub).
+**Alternatively via UI**: Open the Plugins dialog in Nova and switch to the **Browse** tab (or click **Install** in the toolbar to open the Plugin Hub).
 
 ---
 
@@ -75,7 +75,7 @@ The `_plugin_scan` plugin provides an LLM-driven security scanner that clones th
 
 **Always offer to scan before installing.** If the user hasn't explicitly declined, say:
 
-> "Before installing, I strongly recommend running a security scan on this plugin. Third-party plugins execute code inside your Agent Zero environment. Should I scan it first? The scan typically takes 2-4 minutes."
+> "Before installing, I strongly recommend running a security scan on this plugin. Third-party plugins execute code inside your Nova environment. Should I scan it first? The scan typically takes 2-4 minutes."
 
 If the user declines, acknowledge but warn once:
 
@@ -121,7 +121,7 @@ If the scan times out or errors (500), inform the user and ask whether to procee
 
 ## Install a Plugin
 
-> **Always use the HTTP API or UI.** Never import Agent Zero framework modules directly from `code_execution_tool` - the agent runs in a separate Python runtime (`/opt/venv`) that does not have the framework's dependencies. All programmatic installs must go through HTTP.
+> **Always use the HTTP API or UI.** Never import Nova framework modules directly from `code_execution_tool` - the agent runs in a separate Python runtime (`/opt/venv`) that does not have the framework's dependencies. All programmatic installs must go through HTTP.
 
 ### How installed state works
 
@@ -133,9 +133,9 @@ The Plugin Hub marks a plugin as **Installed** by cross-referencing Plugin Hub k
 
 ### API authentication (required for all HTTP calls)
 
-The Agent Zero API uses CSRF protection. The `Origin` header is **always required** - without it the CSRF endpoint returns `ok: false` even when login is disabled.
+The Nova API uses CSRF protection. The `Origin` header is **always required** - without it the CSRF endpoint returns `ok: false` even when login is disabled.
 
-**Step 1: Set the base URL.** Agent Zero listens on port 80 inside Docker (the standard deployment):
+**Step 1: Set the base URL.** Nova listens on port 80 inside Docker (the standard deployment):
 
 ```python
 import requests
@@ -229,7 +229,7 @@ for state in [False, True]:
     )
 ```
 
-Or simply restart Agent Zero - on startup it re-scans `usr/plugins/` fresh.
+Or simply restart Nova - on startup it re-scans `usr/plugins/` fresh.
 
 ---
 
@@ -323,7 +323,7 @@ ls /a0/usr/plugins/<name>/
 rm -rf /a0/usr/plugins/<name>/
 ```
 
-After manual removal, refresh the plugin list via the UI or restart Agent Zero.
+After manual removal, refresh the plugin list via the UI or restart Nova.
 
 ---
 

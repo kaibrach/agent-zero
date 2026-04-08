@@ -7,6 +7,14 @@ const model = {
   tasks: [],
   selected: "",
 
+  getTask(taskId) {
+    return Array.isArray(this.tasks) ? this.tasks.find((task) => task?.id === taskId) : null;
+  },
+
+  getContextId(taskId) {
+    return this.getTask(taskId)?.context_id || taskId;
+  },
+
   init() {
     // No-op: data is driven by poll() in index.js; this store provides a stable target
   },
@@ -47,7 +55,7 @@ const model = {
   // Action methods for task management
   selectTask(taskId) {
     this.setSelected(taskId);
-    chatsStore.selectChat(taskId);
+    chatsStore.selectChat(this.getContextId(taskId));
   },
 
   openDetail(taskId) {
@@ -58,7 +66,7 @@ const model = {
   },
 
   reset(taskId) {
-    chatsStore.resetChat(taskId);
+    chatsStore.resetChat(this.getContextId(taskId));
   },
 
   deleteTask(taskId) {

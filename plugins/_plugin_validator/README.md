@@ -1,10 +1,10 @@
 # Plugin Validator
 
-Validate Agent Zero plugins against structural, manifest, convention, and security expectations.
+Validate Nova plugins against structural, manifest, convention, and security expectations.
 
 ## What It Does
 
-This plugin generates a structured validation prompt for either a local plugin or an external source, runs the review in a temporary agent context, and returns a markdown report that checks whether a plugin follows Agent Zero plugin conventions.
+This plugin generates a structured validation prompt for either a local plugin or an external source, runs the review in a temporary agent context, and returns a markdown report that checks whether a plugin follows Nova plugin conventions.
 
 ## Main Behavior
 
@@ -38,4 +38,4 @@ This plugin generates a structured validation prompt for either a local plugin o
 
 - **Name**: `_plugin_validator`
 - **Title**: `Plugin Validator`
-- **Description**: Validate Agent Zero plugins against manifest, structure, code pattern, and security conventions.
+- **Description**: Validate Nova plugins against manifest, structure, code pattern, and security conventions.

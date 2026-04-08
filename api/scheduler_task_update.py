@@ -48,6 +48,9 @@ class SchedulerTaskUpdate(ApiHandler):
         if "attachments" in input:
             update_params["attachments"] = input.get("attachments", [])
 
+        if "show_in_task_list" in input:
+            update_params["show_in_task_list"] = bool(input.get("show_in_task_list"))
+
         if "project_name" in input or "project_color" in input:
             return {"error": "Project changes are not allowed"}
 

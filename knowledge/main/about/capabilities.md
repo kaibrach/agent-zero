@@ -1,9 +1,9 @@
-# Agent Zero - Capabilities Reference
+# Nova - Capabilities Reference
 
 ## Code Execution
 
 The agent can write and execute code in any language available in the Docker container. The execution environment is a Kali Linux container with two Python runtimes:
-- `/opt/venv-a0` (Python 3.12) - the Agent Zero framework runtime
+- `/opt/venv-a0` (Python 3.12) - the Nova framework runtime
 - `/opt/venv` (Python 3.13) - the agent's execution runtime (default for agent-run code)
 
 The agent installs packages into the execution runtime (`/opt/venv`) via `pip install`. Packages needed by the framework itself must target `/opt/venv-a0`.
@@ -65,7 +65,7 @@ The agent can schedule tasks to run at specified times or intervals using the sc
 
 ## External API and MCP
 
-Agent Zero can act as both an MCP server and an MCP client:
+Nova can act as both an MCP server and an MCP client:
 - As an **MCP server**: exposes agent capabilities to other MCP-compatible clients
 - As an **MCP client**: uses tools from external MCP servers (configured per project or globally)
 

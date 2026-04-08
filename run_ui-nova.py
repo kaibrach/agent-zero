@@ -16,7 +16,7 @@ def run(ui_root: str = "webui-nova"):
     PrintStyle().print("Preparing web server runtime...")
     server_runtime, host, port = prepare_web_runtime(ui_root=ui_root)
 
-    PrintStyle().print("Initializing Agent Zero components...")
+    PrintStyle().print("Initializing Nova components...")
     init_a0()
 
     PrintStyle().print("Starting UI/API server...")

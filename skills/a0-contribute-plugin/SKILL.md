@@ -1,6 +1,6 @@
 ---
 name: a0-contribute-plugin
-description: Guide for publishing an Agent Zero plugin to the community Plugin Index (a0-plugins repo). Covers GitHub repo setup, index.yaml creation, CI validation rules, and PR submission. Use when the user wants to share, publish, submit, or contribute a plugin to the Plugin Hub so other Agent Zero users can find and install it.
+description: Guide for publishing an Nova plugin to the community Plugin Index (a0-plugins repo). Covers GitHub repo setup, index.yaml creation, CI validation rules, and PR submission. Use when the user wants to share, publish, submit, or contribute a plugin to the Plugin Hub so other Nova users can find and install it.
 version: 1.0.0
 tags: ["plugins", "contribute", "publish", "plugin-hub", "community", "index", "PR"]
 trigger_patterns:
@@ -14,9 +14,9 @@ trigger_patterns:
   - "open source plugin"
 ---
 
-# Agent Zero Plugin Contribution
+# Nova Plugin Contribution
 
-This skill guides publishing a plugin to the [Plugin Index](https://github.com/agent0ai/a0-plugins), making it discoverable and installable by all Agent Zero users.
+This skill guides publishing a plugin to the [Plugin Index](https://github.com/agent0ai/a0-plugins), making it discoverable and installable by all Nova users.
 
 ---
 
@@ -85,7 +85,7 @@ If the plugin was built locally, help the user create the GitHub repo and push i
 
 ```bash
 # Create repo (automatic mode - using gh CLI)
-gh repo create <repo-name> --public --description "Agent Zero plugin: <title>"
+gh repo create <repo-name> --public --description "Nova plugin: <title>"
 git init
 git add .
 git commit -m "feat: initial plugin commit"
@@ -221,7 +221,7 @@ gh pr create \
 
 | File | Location | Purpose | Key fields |
 |---|---|---|---|
-| `plugin.yaml` | Your plugin's GitHub repo root | Runtime manifest (drives Agent Zero behavior) | `name` (required!), `title`, `description`, `version`, `settings_sections`, `per_project_config`, `per_agent_config`, `always_enabled` |
+| `plugin.yaml` | Your plugin's GitHub repo root | Runtime manifest (drives Nova behavior) | `name` (required!), `title`, `description`, `version`, `settings_sections`, `per_project_config`, `per_agent_config`, `always_enabled` |
 | `index.yaml` | `a0-plugins/plugins/<name>/` | Index manifest (drives discoverability) | `title`, `description`, `github`, `tags`, `screenshots` |
 
 **Never mix these up.** They have different schemas and different purposes.

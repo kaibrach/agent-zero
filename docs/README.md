@@ -1,19 +1,19 @@
-![Agent Zero Logo](res/header.png)
-# Agent Zero Documentation
+![Nova Logo](res/header.png)
+# Nova Documentation
 
-Welcome to the Agent Zero documentation hub. Whether you're getting started or diving deep into the framework, you'll find comprehensive guides below.
+Welcome to the Nova documentation hub. Whether you're getting started or diving deep into the framework, you'll find comprehensive guides below.
 
 ## Quick Start
 
-- **[Quickstart Guide](quickstart.md):** Get up and running in 5 minutes with Agent Zero.
+- **[Quickstart Guide](quickstart.md):** Get up and running in 5 minutes with Nova.
 - **[Installation Guide](setup/installation.md):** Install scripts, updates, and advanced Docker setup (includes [How to Update](setup/installation.md#how-to-update-agent-zero)).
 - **[Self Update](guides/self-update.md):** How the in-app updater works (technical reference).
-- **[VPS Deployment](setup/vps-deployment.md):** Deploy Agent Zero on a remote server.
+- **[VPS Deployment](setup/vps-deployment.md):** Deploy Nova on a remote server.
 - **[Development Setup](setup/dev-setup.md):** Set up a local development environment.
 
 ## User Guides
 
-- **[Usage Guide](guides/usage.md):** Comprehensive guide to Agent Zero's features and capabilities.
+- **[Usage Guide](guides/usage.md):** Comprehensive guide to Nova's features and capabilities.
 - **[Projects Tutorial](guides/projects.md):** Learn to create isolated workspaces with dedicated context and memory.
 - **[API Integration](guides/api-integration.md):** Add external APIs without writing code.
 - **[MCP Setup](guides/mcp-setup.md):** Configure Model Context Protocol servers.
@@ -22,20 +22,20 @@ Welcome to the Agent Zero documentation hub. Whether you're getting started or d
 
 ## Developer Documentation
 
-- **[Architecture Overview](developer/architecture.md):** Understand Agent Zero's internal structure and components.
+- **[Architecture Overview](developer/architecture.md):** Understand Nova's internal structure and components.
 - **[Plugins](developer/plugins.md):** Build plugins with `plugin.yaml`, scoped settings, and activation toggles.
 - **[Extensions](developer/extensions.md):** Create custom extensions to extend functionality.
-- **[Connectivity](developer/connectivity.md):** Connect to Agent Zero from external applications.
+- **[Connectivity](developer/connectivity.md):** Connect to Nova from external applications.
 - **[WebSockets](developer/websockets.md):** Real-time communication infrastructure.
 - **[MCP Configuration](developer/mcp-configuration.md):** Advanced MCP server configuration.
 - **[Notifications](developer/notifications.md):** Notification system architecture and setup.
 - **[Contributing Skills](developer/contributing-skills.md):** Create and share agent skills.
-- **[Contributing Guide](guides/contribution.md):** Contribute to the Agent Zero project.
+- **[Contributing Guide](guides/contribution.md):** Contribute to the Nova project.
 
 ## Community & Support
 
 - **Join the Community:** Connect with other users on [Discord](https://discord.gg/B8KZKNsPpj) to discuss ideas, ask questions, and collaborate.
-- **Share Your Work:** Show off your Agent Zero creations and workflows in the [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area.
+- **Share Your Work:** Show off your Nova creations and workflows in the [Show and Tell](https://github.com/agent0ai/agent-zero/discussions/categories/show-and-tell) area.
 - **Report Issues:** Use the [GitHub issue tracker](https://github.com/agent0ai/agent-zero/issues) to report bugs or suggest features.
 - **Follow Updates:** Subscribe to the [YouTube channel](https://www.youtube.com/@AgentZeroFW) for tutorials and release videos.
 
@@ -46,18 +46,18 @@ Welcome to the Agent Zero documentation hub. Whether you're getting started or d
 - [Quick Start](#quick-start)
   - [Quickstart Guide](quickstart.md)
   - [Installation Guide](setup/installation.md)
-    - [How to Update Agent Zero](setup/installation.md#how-to-update-agent-zero)
+    - [How to Update Nova](setup/installation.md#how-to-update-agent-zero)
     - [Manual Installation (Advanced)](setup/installation.md#manual-installation-advanced)
     - [Step 1: Install Docker Desktop](setup/installation.md#step-1-install-docker-desktop)
       - [Windows Installation](setup/installation.md#-windows-installation)
       - [macOS Installation](setup/installation.md#-macos-installation)
       - [Linux Installation](setup/installation.md#-linux-installation)
-    - [Step 2: Run Agent Zero](setup/installation.md#step-2-run-agent-zero)
+    - [Step 2: Run Nova](setup/installation.md#step-2-run-agent-zero)
       - [Pull Docker Image](setup/installation.md#21-pull-the-agent-zero-docker-image)
       - [Map Folders for Persistence](setup/installation.md#22-optional-map-folders-for-persistence)
       - [Run the Container](setup/installation.md#23-run-the-container)
       - [Access the Web UI](setup/installation.md#24-access-the-web-ui)
-    - [Step 3: Configure Agent Zero](setup/installation.md#step-3-configure-agent-zero)
+    - [Step 3: Configure Nova](setup/installation.md#step-3-configure-agent-zero)
       - [Settings Configuration](setup/installation.md#settings-configuration)
       - [Agent Configuration](setup/installation.md#agent-configuration)
       - [Chat Model Settings](setup/installation.md#chat-model-settings)
@@ -121,6 +121,6 @@ Welcome to the Agent Zero documentation hub. Whether you're getting started or d
 
 ---
 
-### Your journey with Agent Zero starts now!
+### Your journey with Nova starts now!
 
 Ready to dive in? Start with the [Quickstart Guide](quickstart.md) for the fastest path to your first chat, or follow the [Installation Guide](setup/installation.md) for a detailed setup walkthrough.

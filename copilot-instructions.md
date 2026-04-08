@@ -1,11 +1,11 @@
 ---
 name: Nova Workspace Instructions
-description: "AI agent guidance for Agent Zero development. Use for: implementing backend features, creating frontend components, building plugins, fixing bugs, writing tests, or understanding patterns. Reference: AGENTS.md (architecture, commands), README.md (overview)."
+description: "AI agent guidance for Nova development. Use for: implementing backend features, creating frontend components, building plugins, fixing bugs, writing tests, or understanding patterns. Reference: AGENTS.md (architecture, commands), README.md (overview)."
 ---
 
 # Nova Workspace Instructions
 
-Agent Zero is a full-stack agentic framework with Python backend (Flask + Socket.io), Alpine.js frontend, and a plugin system. This guide helps AI agents contribute effectively to all areas.
+Nova is a full-stack agentic framework with Python backend (Flask + Socket.io), Alpine.js frontend, and a plugin system. This guide helps AI agents contribute effectively to all areas.
 
 **Quick links:** [AGENTS.md](./AGENTS.md) (architecture, commands, project structure) | [README.md](./README.md) | [Plugins Deep Dive](./docs/agents/AGENTS.plugins.md)
 

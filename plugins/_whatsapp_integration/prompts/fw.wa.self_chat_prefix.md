@@ -1,2 +1,2 @@
-[🤖 Agent Zero]
+[🤖 Nova]
 {{response_text}}

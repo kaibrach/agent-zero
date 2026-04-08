@@ -638,7 +638,7 @@ def generate_release_body_with_openrouter(commits: list[CommitEntry]) -> str:
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
             "HTTP-Referer": f"https://github.com/{repository}",
-            "X-OpenRouter-Title": "Agent Zero Docker Release Notes",
+            "X-OpenRouter-Title": "Nova Docker Release Notes",
         },
         method="POST",
     )

@@ -240,6 +240,7 @@ async def build_snapshot_from_request(*, request: StateRequestV1) -> SnapshotV1:
     ctxs: list[dict[str, Any]] = []
     tasks: list[dict[str, Any]] = []
     processed_contexts: set[str] = set()
+    task_ids_in_sidebar: set[str] = set()
 
     all_ctxs = AgentContext.all()
     for ctx in all_ctxs:
@@ -259,11 +260,12 @@ async def build_snapshot_from_request(*, request: StateRequestV1) -> SnapshotV1:
             ctxs.append(context_data)
         else:
             task_details = scheduler.serialize_task(ctx.id)
-            if task_details:
+            if task_details and task_details.get("show_in_task_list"):
                 context_data.update(
                     {
                         "task_name": task_details.get("name"),
                         "uuid": task_details.get("uuid"),
+                        "id": task_details.get("uuid"),
                         "state": task_details.get("state"),
                         "type": task_details.get("type"),
                         "system_prompt": task_details.get("system_prompt"),
@@ -282,9 +284,24 @@ async def build_snapshot_from_request(*, request: StateRequestV1) -> SnapshotV1:
                 else:
                     context_data["token"] = task_details.get("token")
 
-            tasks.append(context_data)
+                tasks.append(context_data)
+                task_ids_in_sidebar.add(task_details.get("uuid"))
 
         processed_contexts.add(ctx.id)
+
+    for task in scheduler.get_tasks():
+        if task.uuid in task_ids_in_sidebar or not task.is_visible_in_task_list() or task.is_dedicated():
+            continue
+
+        task_details = scheduler.serialize_task(task.uuid)
+        if not task_details:
+            continue
+
+        sidebar_entry = dict(task_details)
+        sidebar_entry["id"] = task.uuid
+        sidebar_entry["task_name"] = task_details.get("name")
+        tasks.append(sidebar_entry)
+        task_ids_in_sidebar.add(task.uuid)
 
     ctxs.sort(key=lambda x: x["created_at"], reverse=True)
     tasks.sort(key=lambda x: x["created_at"], reverse=True)
