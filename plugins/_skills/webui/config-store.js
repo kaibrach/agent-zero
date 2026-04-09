@@ -1,5 +1,4 @@
 import * as API from "/js/api.js";
-import { store as settingsStore } from "/components/settings/settings-store.js";
 import { store as chatsStore } from "/components/sidebar/chats/chats-store.js";
 import { store as projectsStore } from "/components/projects/projects-store.js";
 import {
@@ -231,7 +230,7 @@ window.createSkillsConfigModel = (context, config) => ({
 
   async openSettingsSkills() {
     await this.navigateAway(async () => {
-      await settingsStore.open("skills");
+      await window.openModal?.("components/skills/main.html");
     });
   },
 
