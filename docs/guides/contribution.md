@@ -26,6 +26,27 @@ Contributions to improve Nova are very welcome!  This guide outlines how to cont
 3. **Provide Details:** In your pull request description, clearly explain the purpose and scope of your changes. Include relevant context, test results, and any other information that might be helpful for reviewers.
 4. **Address Feedback:**  Be responsive to feedback from the community. We love changes, but we also love to discuss them!
 
+## Working With Forks Safely
+
+When contributing from a fork, prefer the standard GitHub flow:
+
+1. **Fork the repository publicly** if the branch may become the head branch of an upstream pull request.
+2. **Add an `upstream` remote** that points to `agent0ai/agent-zero`.
+3. **Sync your fork regularly** before starting new work so your branch starts from the current upstream target branch.
+4. **Create one focused branch per change** (for example, one bugfix, one plugin, or one docs update).
+5. **Open the pull request across forks** by explicitly selecting the upstream base repository/branch and your fork/compare branch.
+
+If your fork contains GitHub Actions workflows, be careful with GitHub's "Allow edits and access to secrets by maintainers" option. Only enable it when you are comfortable with maintainers editing workflow files on the fork branch.
+
+## Choosing The Right Publication Path
+
+- **Core bugfixes and docs for Agent Zero itself:** prepare them in a clean fork/clone of `agent-zero` and open a PR back to the upstream repository.
+- **Community plugins:** publish the plugin in its own public repository, then submit its `index.yaml` entry to `agent0ai/a0-plugins` as described in `../developer/plugins.md`.
+- **Skills:** develop locally in `usr/skills/`, then move stable skills to `skills/` for Agent Zero contributions or publish them in a dedicated public repository/collection.
+- **Private experiments, credentials, local R&D, or customer-specific assets:** keep them out of public forks and upstream pull requests.
+
+For a contributor-focused decision guide that covers fixes, plugins, skills, and what should stay private, see `../developer/sharing-and-safety.md`.
+
 ## Documentation Stack
 
 - The documentation is built using Markdown. We appreciate your contributions even if you don't know Markdown, and look forward to improve Nova for everyone's benefit.
