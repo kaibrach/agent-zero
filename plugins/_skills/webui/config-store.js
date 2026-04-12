@@ -230,7 +230,7 @@ window.createSkillsConfigModel = (context, config) => ({
 
   async openSettingsSkills() {
     await this.navigateAway(async () => {
-      await window.openModal?.("components/skills/main.html");
+      await window.openModal?.("plugins/_skills_hub/webui/main.html");
     });
   },
 

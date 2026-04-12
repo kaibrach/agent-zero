@@ -1,9 +1,10 @@
 services:
   nova:
     container_name: nova
-    image: kbrach/nova:latest
+    image: nova-local:latest
     volumes:
       - ./nova:/a0
     ports:
-      - "50080:80"
+      - "5080:80"
+      - "5022:22"
       

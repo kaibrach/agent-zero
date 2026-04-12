@@ -27,6 +27,7 @@ class DiscoveryCardsExtension(Extension):
             "show_in_onboarding": True
         })
 
+
         # 2. Telegram
         if not telegram_config.get("bot_token"):
             banners.append({

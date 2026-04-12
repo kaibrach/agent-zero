@@ -5,8 +5,10 @@
     import { store as chatsStore } from "/components/sidebar/chats/chats-store.js";
     import { store as projectsStore } from "/components/projects/projects-store.js";
     import { store as chatInputStore } from "/components/chat/input/input-store.js";
+    import { store as settingsStore } from "/components/settings/settings-store.js";
+    import { store as mcpServersStore } from "/components/settings/mcp/client/mcp-servers-store.js";
   </script>
-</head>
+</head> 
 <body>
   <div
     class="sidebar-header-stack"
@@ -22,7 +24,7 @@
       :class="{ 'sidebar-header-panel-open': $store.sidebar.headOpen() }"
     >
       <div id="logo-bar">
-        <a href="https://github.com/agent0ai/agent-zero" target="_blank" rel="noopener noreferrer" aria-label="Nova on GitHub">
+        <a href="https://github.com/kaibrach" target="_blank" rel="noopener noreferrer" aria-label="Nova on GitHub">
           <div class="logo-container">
             <span id="a0-logo" class="logo-expanded" role="img" aria-label="Nova"></span>
             <!-- Placeholder for the single 'A' logo asset -->
@@ -49,6 +51,10 @@
           <span class="material-symbols-outlined" aria-hidden="true">settings</span>
         </button>
 
+        <!-- <button class="config-button header-action-button" id="header-skills" @click="openModal('plugins/_skills_hub/webui/main.html')" title="Skills" aria-label="Skills" tabindex="-1">
+          <span class="material-symbols-outlined" aria-hidden="true">psychology_alt</span>
+        </button> -->
+
         <button
           class="config-button header-action-button dropdown-toggle"
           id="header-more"
@@ -73,9 +79,19 @@
 
         <div class="dropdown-header">Navigation</div>
 
-        <button class="dropdown-item" @click="deselectChat(); $store.sidebar.menuClose()">
+        <!-- <button class="dropdown-item" @click="deselectChat(); $store.sidebar.menuClose()">
           <span class="material-symbols-outlined">home</span>
           <span>Dashboard</span>
+        </button> -->
+
+        <!-- <button class="dropdown-item" @click="openModal('/plugins/_skills_hub/webui/main.html'); $store.sidebar.menuClose()">
+          <span class="material-symbols-outlined">psychology_alt</span>
+          <span>Skills</span>
+        </button> -->
+
+        <button class="dropdown-item" @click="$store.mcpServersStore.openMcpModal(); $store.sidebar.menuClose()">
+          <span class="material-symbols-outlined">psychology_alt</span>
+          <span>MCP</span>
         </button>
 
         <button class="dropdown-item" @click="$store.projects.openProjectsModal(); $store.sidebar.menuClose()">
@@ -93,10 +109,10 @@
           <span>Scheduler</span>
         </button>
 
-        <button class="dropdown-item" @click="openModal('settings/settings.html'); $store.sidebar.menuClose()">
+        <!-- <button class="dropdown-item" @click="openModal('settings/settings.html'); $store.sidebar.menuClose()">
           <span class="material-symbols-outlined">settings</span>
           <span>Settings</span>
-        </button>
+        </button> -->
 
         <div class="dropdown-separator"></div>
         <div class="dropdown-header">Chat Actions</div>

@@ -21,21 +21,21 @@
                             <h3 class="welcome-action-title">New Chat</h3>
                         </div>
 
-                        <div class="welcome-action-card" @click="$store.welcomeStore.executeAction('projects')">
+                        <div id="welcome-action-projects" class="welcome-action-card" @click="$store.welcomeStore.executeAction('projects')">
                             <span class="material-symbols-outlined welcome-action-icon">folder</span>
                             <h3 class="welcome-action-title">Projects</h3>
                         </div>
-                        <div class="welcome-action-card" @click="$store.welcomeStore.executeAction('memory')">
+                        <div id="welcome-action-memory" class="welcome-action-card" @click="$store.welcomeStore.executeAction('memory')">
                             <span class="material-symbols-outlined welcome-action-icon">memory</span>
                             <h3 class="welcome-action-title">Memory</h3>
                         </div>
 
-                        <div class="welcome-action-card welcome-action-card-skills" @click="$store.welcomeStore.executeAction('skills')">
+                        <div id="welcome-action-skills" class="welcome-action-card" @click="$store.welcomeStore.executeAction('skills')">
                             <span class="material-symbols-outlined welcome-action-icon">psychology_alt</span>
                             <h3 class="welcome-action-title">Skills</h3>
-                        </div>
+                        </div> 
 
-                        <div class="welcome-action-card" @click="$store.welcomeStore.executeAction('scheduler')">
+                        <div id="welcome-action-scheduler" class="welcome-action-card" @click="$store.welcomeStore.executeAction('scheduler')">
                             <span class="material-symbols-outlined welcome-action-icon">schedule</span>
                             <h3 class="welcome-action-title">Scheduler</h3>
                         </div>

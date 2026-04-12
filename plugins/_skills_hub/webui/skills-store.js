@@ -146,7 +146,7 @@ const model = {
   detailLoading: false,
   detailError: "",
   detailHtml: "",
-  detailModalPath: "components/skills/detail.html",
+  detailModalPath: "/plugins/_skills_hub/webui/detail.html",
   browseObserver: null,
 
   async init(mode = "browse") {
@@ -160,6 +160,10 @@ const model = {
     await this.loadSkills();
   },
 
+  async openModal() {
+      await openModal("/plugins/_skills_hub/webui/main.html");
+    },
+  
   resetViewState() {
     this.loading = false;
     this.loadingMessage = "";
@@ -658,7 +662,7 @@ const model = {
     this.detailError = "";
     this.detailHtml = "";
     this.detailTab = "source";
-    openModal(this.detailModalPath || "components/skills/detail.html");
+    openModal(this.detailModalPath || "/plugins/_skills_hub/webui/detail.html");
     try {
       const response = await fetchApi("/skills", {
         method: "POST",

@@ -65,6 +65,19 @@ function normalizeConfigObject(parsed) {
   return { mcpServers: {} };
 }
 
+async function ensureSettingsLoaded() {
+  if (settingsStore.settings) return settingsStore.settings;
+
+  const response = await API.callJsonApi("settings_get", null);
+  if (!response?.settings) {
+    throw new Error("Failed to load settings");
+  }
+
+  settingsStore.settings = response.settings;
+  settingsStore.additional = response.additional || null;
+  return settingsStore.settings;
+}
+
 const model = {
   editor: null,
   loading: true,
@@ -98,6 +111,7 @@ const model = {
   installInputValues: {},
 
   async initialize() {
+    await ensureSettingsLoaded();
     this.refreshInstalledServers();
     this.startStatusCheck();
     await Promise.all([
@@ -397,6 +411,11 @@ const model = {
       this.serverLog = resp.log;
       openModal("settings/mcp/client/mcp-servers-log.html");
     }
+  },
+
+  async openMcpModal() {
+    this.setActiveTab("installed");
+    openModal("settings/mcp/client/mcp-servers.html");
   },
 
   async onToolCountClick(serverName) {

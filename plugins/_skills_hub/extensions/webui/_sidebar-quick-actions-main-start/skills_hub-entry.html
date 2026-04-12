@@ -1,0 +1,11 @@
+<!-- Skills Hub -->
+<div x-data>
+    <button 
+      x-move-after=".config-button#dashboard" 
+      class="config-button" 
+      id="skills-hub" 
+      @click="openModal('/plugins/_skills_hub/webui/main.html'); $store.sidebar.menuClose()"
+      title="Skills Hub - Manage and explore skills for your projects.">
+      <span class="material-symbols-outlined">psychology_alt</span>
+    </button>
+</div>

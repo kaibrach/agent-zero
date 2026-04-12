@@ -1,6 +1,6 @@
 # Skills
 
-Skills is a built-in Agent Zero plugin that lets you pin skills into prompt extras for a chosen scope.
+Skills is a built-in Nova plugin that lets you pin skills into prompt extras for a chosen scope.
 
 ## What It Does
 
@@ -12,7 +12,7 @@ Skills is a built-in Agent Zero plugin that lets you pin skills into prompt extr
 
 ## Why This Exists
 
-Agent Zero already supports loading skills dynamically with `skills_tool`, and already has great built-in skill management surfaces. What it did not have was a lightweight way to make a few skills feel "always on" for a specific scope without modifying the core prompt system.
+Nova already supports loading skills dynamically with `skills_tool`, and already has great built-in skill management surfaces. What it did not have was a lightweight way to make a few skills feel "always on" for a specific scope without modifying the core prompt system.
 
 Skills fills that gap as a bundled built-in plugin.
 

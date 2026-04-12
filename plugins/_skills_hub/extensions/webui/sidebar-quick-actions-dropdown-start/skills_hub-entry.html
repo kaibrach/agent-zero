@@ -1,0 +1,12 @@
+<!-- Skills Hub -->
+<div x-data>
+  <button
+    x-move-after=".quick-actions-dropdown .dropdown-header + .dropdown-item"
+    class="dropdown-item"
+    id="skills-hub-dropdown"
+    title="Skills"
+    @click="openModal('/plugins/_skills_hub/webui/main.html'); dropdownOpen = false">
+    <span class="material-symbols-outlined">psychology_alt</span>
+    <span>Skills</span>
+  </button>
+</div>
