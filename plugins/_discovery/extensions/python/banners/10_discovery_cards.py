@@ -45,7 +45,9 @@ class DiscoveryCardsExtension(Extension):
             })
 
         # 3. Email
-        if not email_config.get("imap_username") and not email_config.get("smtp_username"):
+        email_handlers = email_config.get("handlers") or []
+        email_is_configured = any((handler or {}).get("username") for handler in email_handlers)
+        if not email_is_configured:
             banners.append({
                 "id": "discovery-email",
                 "type": "feature",
@@ -53,7 +55,7 @@ class DiscoveryCardsExtension(Extension):
                 "description": "Let Nova read and send emails on your behalf.",
                 "thumbnail": "/plugins/_discovery/webui/assets/thumb-email.png",
                 "icon": "mail",
-                "cta_text": "Setup",
+                "cta_text": "Open Setup",
                 "cta_action": "open-plugin-config:_email_integration",
                 "dismissible": True,
                 "priority": 50,
@@ -75,4 +77,3 @@ class DiscoveryCardsExtension(Extension):
                 "priority": 50,
                 "show_in_onboarding": True
             })
-
