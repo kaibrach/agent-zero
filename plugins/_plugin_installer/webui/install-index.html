@@ -37,6 +37,7 @@
                             x-model="$store.pluginInstallStore.sortBy">
                             <option value="stars">Stars</option>
                             <option value="name">Name</option>
+                            <option value="date">Date</option>
                         </select>
                     </label>
 
@@ -63,6 +64,12 @@
                             <span class="pi-filter-count" x-text="filter.count"></span>
                         </button>
                     </template>
+                </div>
+
+                <div x-show="$store.pluginInstallStore.installedUpdateCount > 0 && $store.pluginInstallStore.browseFilter !== 'update'" class="browse-update-notice">
+                    <span class="material-symbols-outlined">update</span>
+                    <span x-text="`${$store.pluginInstallStore.installedUpdateCount} installed plugin${$store.pluginInstallStore.installedUpdateCount === 1 ? '' : 's'} have available updates`"></span>
+                    <button class="button subtle" @click="$store.pluginInstallStore.setBrowseFilter('update')">View updates</button>
                 </div>
 
                 <div x-show="$store.pluginInstallStore.loading" class="pi-state-card pi-state-loading">
@@ -180,6 +187,24 @@
     </div>
 
     <style>
+        .browse-update-notice {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 0.85rem;
+            border-radius: 8px;
+            border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--color-border));
+            background: color-mix(in srgb, #f59e0b 8%, var(--color-bg-secondary));
+            font-size: 0.88rem;
+            color: var(--color-text-primary);
+        }
+        .browse-update-notice .material-symbols-outlined {
+            font-size: 1.1rem;
+            color: #f59e0b;
+            flex-shrink: 0;
+        }
+        .browse-update-notice span:not(.material-symbols-outlined) { flex: 1; }
+
         .pi-browse-shell {
             display: flex;
             flex-direction: column;

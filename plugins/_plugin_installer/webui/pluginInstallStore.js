@@ -437,6 +437,15 @@ const model = {
     }
     if (this.sortBy === "stars") {
       list.sort((a, b) => this._comparePluginsByStars(a, b));
+    } else if (this.sortBy === "date") {
+      list.sort((a, b) => {
+        const at = a?.updated ? Date.parse(a.updated) : NaN;
+        const bt = b?.updated ? Date.parse(b.updated) : NaN;
+        if (!Number.isNaN(at) && !Number.isNaN(bt)) return bt - at;
+        if (!Number.isNaN(at)) return -1;
+        if (!Number.isNaN(bt)) return 1;
+        return (a.title || a.key).localeCompare(b.title || b.key);
+      });
     } else {
       list.sort((a, b) =>
         (a.title || a.key).localeCompare(b.title || b.key)
@@ -462,6 +471,10 @@ const model = {
   get paginatedPlugins() {
     const start = (this.page - 1) * PER_PAGE;
     return this.filteredPlugins.slice(start, start + PER_PAGE);
+  },
+
+  get installedUpdateCount() {
+    return this.pluginsList.filter((p) => p.has_update).length;
   },
 
   getBrowseSubtitle(plugin) {

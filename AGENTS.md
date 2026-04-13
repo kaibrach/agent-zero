@@ -1,6 +1,6 @@
 # Nova - AGENTS.md
 
-[Generated using reconnaissance on 2026-02-22]
+[Generated using reconnaissance on 2026-02-22, last updated 2026-04-13]
 
 ## Quick Reference
 Tech Stack: Python 3.12+ | Flask | Alpine.js | LiteLLM | WebSocket (Socket.io)
@@ -8,6 +8,7 @@ Dev Server: python run_ui.py (runs on http://localhost:50001 by default)
 Run Tests: pytest (standard) or pytest tests/test_name.py (file-scoped)
 Documentation: README.md | docs/
 Frontend Deep Dives: [Component System](docs/agents/AGENTS.components.md) | [Modal System](docs/agents/AGENTS.modals.md) | [Plugin Architecture](docs/agents/AGENTS.plugins.md) | [Banners & Discovery](docs/agents/AGENTS.banners.md)
+Skills Hub: [Skills Hub Plugin](plugins/_skills_hub/README.md)
 
 ---
 
@@ -17,11 +18,12 @@ Frontend Deep Dives: [Component System](docs/agents/AGENTS.components.md) | [Mod
 3. [Docker Environment](#docker-environment)
 4. [Project Structure](#project-structure)
 5. [Development Patterns & Conventions](#development-patterns--conventions)
-6. [Safety and Permissions](#safety-and-permissions)
-7. [Code Examples](#code-examples)
-8. [Git Workflow](#git-workflow)
-9. [Release Notes](#release-notes)
-10. [Troubleshooting](#troubleshooting)
+6. [Skills Hub Plugin](#skills-hub-plugin)
+7. [Safety and Permissions](#safety-and-permissions)
+8. [Code Examples](#code-examples)
+9. [Git Workflow](#git-workflow)
+10. [Release Notes](#release-notes)
+11. [Troubleshooting](#troubleshooting)
 
 ---
 
@@ -99,6 +101,8 @@ When running in Docker, Nova uses two distinct Python runtimes to isolate the fr
 Key Files:
 - agent.py: Defines AgentContext and the main Agent class.
 - helpers/plugins.py: Plugin discovery and configuration logic.
+- helpers/skills.py: Skill discovery, listing, deletion, and root resolution logic.
+- api/skills.py: Skills API handler — list, delete, registry search/detail/install/download/update, skill_tree.
 - webui/js/AlpineStore.js: Store factory for reactive frontend state.
 - helpers/api.py: Base class for all API endpoints.
 - scripts/openrouter_release_notes_system_prompt.md: Editable system prompt used to generate GitHub release notes during Docker publishing.
@@ -106,6 +110,7 @@ Key Files:
 - docs/agents/AGENTS.components.md: Deep dive into the frontend component architecture.
 - docs/agents/AGENTS.modals.md: Guide to the stacked modal system.
 - docs/agents/AGENTS.plugins.md: Comprehensive guide to the full-stack plugin system.
+- plugins/_skills_hub/: Skills Hub core system plugin — browse, install, and manage skills from the agentskill.sh registry.
 
 ---
 
@@ -159,6 +164,73 @@ Key Files:
 | Mounting | N/A | x-create directive |
 | Processing | monologue_start/end | UI loading state |
 | Cleanup | context_deleted | x-destroy directive |
+
+---
+
+## Skills Hub Plugin
+
+The Skills Hub (`plugins/_skills_hub/`) is a core system plugin for browsing, installing, and managing skills from the [agentskill.sh](https://agentskill.sh) registry.
+
+### Key Files
+- `api/skills.py`: Main API handler — all skill actions dispatched here.
+- `helpers/skills.py`: Skill discovery, listing, deletion, and root resolution.
+- `plugins/_skills_hub/webui/skills-store.js`: Alpine.js store managing all Skills Hub state and interactions.
+- `plugins/_skills_hub/webui/browse.html`: Discovery tab — registry browsing with score chips (Rating/Quality/Security).
+- `plugins/_skills_hub/webui/detail.html`: Skill detail modal — hero, interactive source file explorer, install panel.
+- `plugins/_skills_hub/webui/list.html`: Installed skills list tab.
+
+### API Actions (`api/skills.py`)
+| Action | Description |
+|---|---|
+| `list` | Load installed skills, optionally filtered by project/agent profile |
+| `delete` | Delete a skill by path |
+| `skill_tree` | ASCII tree of a locally installed skill's files |
+| `registry_search` | Search/browse agentskill.sh registry |
+| `registry_detail` | Full skill detail: metadata, `skillTree` (ASCII), `skillFiles` (content + size), source references, quality/security scores |
+| `registry_install` | Install a registry skill; accepts project/agent scoping and conflict strategy |
+| `registry_download` | Download a skill as a ZIP archive |
+| `registry_update` | Re-install/update an installed registry skill |
+
+### `registry_detail` Response Shape
+```json
+{
+  "slug": "my-skill",
+  "owner": "author",
+  "description": "...",
+  "skillMd": "...",
+  "skillTree": "my-skill/\n├── SKILL.md\n└── ...",
+  "skillFiles": [
+    { "path": "SKILL.md", "content": "...", "size": 1234 },
+    { "path": "references/api.md", "content": "...", "size": 5678 }
+  ],
+  "sourceReferences": [...],
+  "qualityDetails": {...},
+  "securityDetails": {...}
+}
+```
+
+### Install Flow
+- `namespace` is always `null` — install path is `<scope> / <slug>` (no namespace segment).
+- Scope is one of: `global`, `project:<name>`, or `profile:<key>`.
+- Conflict strategy: `skip` | `rename` | `overwrite`.
+
+### Frontend Store Key Methods (`skills-store.js`)
+| Method | Description |
+|---|---|
+| `buildSkillFileTree()` | Returns flat sorted `[{type, path, name, depth, size}]` for `x-for` tree rendering |
+| `selectSkillFile(path)` | Sets `activeSkillFile` from `skillTreeFiles` |
+| `renderSkillFileHtml(file)` | Renders `.md` via `renderSafeMarkdown`; other files use `<pre>` |
+| `formatFileSize(bytes)` | Returns human-readable size string (B / KB / MB) |
+| `fileTreeIcon(path)` | Maps file extension to material icon name |
+| `formatDateShort(value)` | Returns `DD.MM.YYYY, HH:mm` |
+| `scoreTone(score, kind)` | Returns `strong\|medium\|caution\|weak` CSS tone token |
+| `installDestinationPreview()` | Live path preview string for install dialog |
+
+### CSS Design Tokens (detail.html / browse.html)
+The Skills Hub uses CSS variables from the Nova design system:
+`--color-panel`, `--color-border`, `--color-text-*`, `--color-highlight`, `--font-mono`
+
+Score tone classes: `pi-score-tag--strong`, `pi-score-tag--medium`, `pi-score-tag--caution`, `pi-score-tag--weak`
 
 ---
 
@@ -249,5 +321,5 @@ pip install -r requirements2.txt
 
 ---
 
-*Last updated: 2026-03-25*
+*Last updated: 2026-04-13*
 *Maintained by: Nova Core Team*

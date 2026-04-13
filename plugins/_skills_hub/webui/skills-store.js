@@ -146,6 +146,10 @@ const model = {
   detailLoading: false,
   detailError: "",
   detailHtml: "",
+  skillTree: "",
+  skillTreeLoading: false,
+  skillTreeFiles: [],
+  activeSkillFile: null,
   detailModalPath: "/plugins/_skills_hub/webui/detail.html",
   browseObserver: null,
 
@@ -200,6 +204,10 @@ const model = {
     this.detailLoading = false;
     this.detailError = "";
     this.detailHtml = "";
+    this.skillTree = "";
+    this.skillTreeLoading = false;
+    this.skillTreeFiles = [];
+    this.activeSkillFile = null;
     if (this.browseObserver) {
       this.browseObserver.disconnect();
       this.browseObserver = null;
@@ -505,6 +513,15 @@ const model = {
         if (leftCount !== rightCount) return rightCount - leftCount;
         return compareByStars(left, right);
       });
+    } else if (this.sortBy === "date") {
+      list.sort((left, right) => {
+        const lt = left?.updatedAt ? Date.parse(left.updatedAt) : NaN;
+        const rt = right?.updatedAt ? Date.parse(right.updatedAt) : NaN;
+        if (!Number.isNaN(lt) && !Number.isNaN(rt)) return rt - lt;
+        if (!Number.isNaN(lt)) return -1;
+        if (!Number.isNaN(rt)) return 1;
+        return compareByStars(left, right);
+      });
     } else {
       list.sort(compareByStars);
     }
@@ -573,6 +590,10 @@ const model = {
       filters.push({ key: `tag:${tag}`, label: formatTag(tag), count });
     }
     return filters;
+  },
+
+  get installedUpdateCount() {
+    return this.normalizedRegistrySkills().filter((s) => s.has_update).length;
   },
 
   getBrowseSubtitle(skill) {
@@ -661,6 +682,8 @@ const model = {
     this.detailLoading = true;
     this.detailError = "";
     this.detailHtml = "";
+    this.skillTree = "";
+    this.skillTreeLoading = false;
     this.detailTab = "source";
     openModal(this.detailModalPath || "/plugins/_skills_hub/webui/detail.html");
     try {
@@ -681,6 +704,9 @@ const model = {
         ...this.selectedSkill,
         ...(result.data || {}),
       };
+      this.skillTree = result.data?.skillTree || "";
+      this.skillTreeFiles = result.data?.skillFiles || [];
+      this.activeSkillFile = this.skillTreeFiles[0] || null;
       this.refreshSelectedSkillState();
       this.detailHtml = renderSafeMarkdown(stripMarkdownFrontmatter(this.selectedSkill.skillMd || "No SKILL.md content returned."), { breaks: false });
       this.selectedSkill.sourceReferences = Array.isArray(this.selectedSkill.sourceReferences)
@@ -697,12 +723,98 @@ const model = {
     return Array.isArray(lines) ? lines.filter(Boolean) : [];
   },
 
+  async loadSkillTree(skillPath) {
+    this.skillTree = "";
+    this.skillTreeLoading = true;
+    try {
+      const response = await fetchApi("/skills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "skill_tree", skill_path: skillPath }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (result.ok) {
+        this.skillTree = result.data?.tree || "";
+      }
+    } catch (err) {
+      console.debug("[skills] loadSkillTree error:", err);
+    } finally {
+      this.skillTreeLoading = false;
+    }
+  },
+
+  buildSkillFileTree() {
+    const files = this.skillTreeFiles || [];
+    const dirs = new Set();
+    const items = [];
+    for (const f of files) {
+      const normalPath = String(f.path || "").replace(/\\/g, "/").replace(/^\//, "");
+      if (!normalPath) continue;
+      const parts = normalPath.split("/");
+      for (let i = 0; i < parts.length - 1; i++) {
+        const dirPath = parts.slice(0, i + 1).join("/");
+        if (!dirs.has(dirPath)) {
+          dirs.add(dirPath);
+          items.push({ type: "dir", path: dirPath, name: parts[i], depth: i, size: 0 });
+        }
+      }
+      const size = f.size || (f.content ? f.content.length : 0);
+      items.push({ type: "file", path: normalPath, name: parts[parts.length - 1], depth: parts.length - 1, size });
+    }
+    items.sort((a, b) => {
+      const aParent = a.path.includes("/") ? a.path.substring(0, a.path.lastIndexOf("/")) : "";
+      const bParent = b.path.includes("/") ? b.path.substring(0, b.path.lastIndexOf("/")) : "";
+      if (aParent !== bParent) return a.path.localeCompare(b.path);
+      if (a.type !== b.type) return a.type === "dir" ? -1 : 1;
+      return a.name.localeCompare(b.name);
+    });
+    return items;
+  },
+
+  selectSkillFile(filePath) {
+    this.activeSkillFile = (this.skillTreeFiles || []).find(f => f.path === filePath) || null;
+  },
+
+  renderSkillFileHtml(file) {
+    if (!file) return "";
+    const ext = String(file.path || "").split(".").pop().toLowerCase();
+    if (ext === "md") {
+      return renderSafeMarkdown(stripMarkdownFrontmatter(file.content || ""), { breaks: false });
+    }
+    return "";
+  },
+
+  formatFileSize(bytes) {
+    const n = Number(bytes) || 0;
+    if (n < 1024) return n + " B";
+    if (n < 1048576) return (n / 1024).toFixed(1) + " KB";
+    return (n / 1048576).toFixed(1) + " MB";
+  },
+
+  fileTreeIcon(path) {
+    const ext = String(path || "").split(".").pop().toLowerCase();
+    const map = { md: "description", py: "code", js: "javascript", ts: "javascript", json: "data_object", txt: "article", yaml: "settings", yml: "settings", html: "html", css: "css", sh: "terminal", toml: "settings" };
+    return map[ext] || "draft";
+  },
+
+  formatDateShort(value) {
+    if (!value) return "Unknown";
+    const d = new Date(value);
+    if (Number.isNaN(d.getTime())) return String(value);
+    const dd = String(d.getDate()).padStart(2, "0");
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const yyyy = d.getFullYear();
+    const hh = String(d.getHours()).padStart(2, "0");
+    const min = String(d.getMinutes()).padStart(2, "0");
+    return `${dd}.${mm}.${yyyy}, ${hh}:${min}`;
+  },
+
   openInstallDialog(skill) {
     if (!skill?.owner || !skill?.slug || !this.registryMeetsRequirements(skill)) return;
     this.installSkill = skill;
     this.installDialogOpen = true;
     this.installError = "";
-    this.installNamespace = sanitizeNamespace(skill?.owner || "");
+    this.installNamespace = "";
     this.installConflict = "skip";
     this.installProjectName = this.projectName || "";
     this.installAgentProfileKey = this.agentProfileKey || "";
@@ -731,9 +843,6 @@ const model = {
     if (this.installProjectName && this.installAgentProfileKey) {
       segments.push(`profile:${this.installAgentProfileKey}`);
     }
-    if (this.installNamespace) {
-      segments.push(this.installNamespace);
-    }
     segments.push(this.installSkill.slug);
     return segments.join(" / ");
   },
@@ -753,7 +862,7 @@ const model = {
           slug: skill.slug,
           project_name: this.installProjectName || null,
           agent_profile: this.installAgentProfileKey || null,
-          namespace: sanitizeNamespace(this.installNamespace) || null,
+          namespace: null,
           conflict: this.installConflict || "skip",
         }),
       });

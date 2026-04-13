@@ -21,7 +21,7 @@
                         <button class="nav-link"
                             :class="{ active: $store.mcpServersStore.activeTab === 'browse' }"
                             @click="$store.mcpServersStore.setActiveTab('browse')">
-                            <span class="material-symbols-outlined tab-icon">storefront</span> Browse Registry
+                            <span class="material-symbols-outlined tab-icon">store</span> Browse
                         </button>
                     </li>
                     <li class="nav-item" role="presentation">
@@ -52,12 +52,34 @@
 
                         <div x-show="$store.mcpServersStore.loading" class="loading">Loading MCP server status...</div>
 
+                        <template x-if="!$store.mcpServersStore.loading && $store.mcpServersStore.installedUpdateCount > 0">
+                            <div class="installed-update-notice">
+                                <span class="material-symbols-outlined">update</span>
+                                <span x-text="`${$store.mcpServersStore.installedUpdateCount} registry server${$store.mcpServersStore.installedUpdateCount === 1 ? '' : 's'} have available updates`"></span>
+                                <button class="button subtle" @click="$store.mcpServersStore.setActiveTab('browse'); $store.mcpServersStore.setBrowseFilter('update')">
+                                    View updates
+                                </button>
+                            </div>
+                        </template>
+
+                        <div class="pi-filter-row" x-show="$store.mcpServersStore.installedFilters.length > 1">
+                            <template x-for="filter in $store.mcpServersStore.installedFilters" :key="filter.key">
+                                <button type="button"
+                                    class="pi-filter-chip"
+                                    :class="{ active: $store.mcpServersStore.installedFilter === filter.key }"
+                                    @click="$store.mcpServersStore.setInstalledFilter(filter.key)">
+                                    <span x-text="filter.label"></span>
+                                    <span class="pi-filter-count" x-text="filter.count"></span>
+                                </button>
+                            </template>
+                        </div>
+
                         <template x-if="!$store.mcpServersStore.loading && $store.mcpServersStore.installedServers.length === 0">
                             <div class="empty-state">No MCP servers are configured yet.</div>
                         </template>
 
                         <div class="server-grid">
-                            <template x-for="server in $store.mcpServersStore.installedServers" :key="server.name">
+                            <template x-for="server in $store.mcpServersStore.filteredInstalledServers" :key="server.name">
                                 <div class="server-card">
                                     <div class="server-card-header">
                                         <div class="server-card-title-wrap">
@@ -126,198 +148,159 @@
                 </template>
 
                 <template x-if="$store.mcpServersStore.activeTab === 'browse'">
-                    <div>
-                        <div class="section-title">Official MCP Registry</div>
-                        <div class="section-description">
-                            Search the official MCP registry and install supported servers directly into Nova's MCP configuration.
-                        </div>
+                    <div class="pi-browse-shell">
+                        <section class="pi-browse-hero">
+                            <div class="pi-browse-copy">
+                                <div class="pi-browse-eyebrow">Official MCP Registry</div>
+                                <h2 class="pi-browse-title">Find MCP servers for Nova</h2>
+                                <p class="pi-browse-description">
+                                    Browse the official MCP registry, inspect versions, and install servers directly into your configuration.
+                                </p>
+                            </div>
+                            <div class="pi-browse-summary" x-text="$store.mcpServersStore.browseResultsSummary"></div>
+                        </section>
 
-                        <div class="browse-intro-grid">
-                            <div class="browse-intro-card intro-primary">
-                                <div class="browse-intro-kicker">Overview</div>
-                                <div class="browse-intro-title">Track fresh registry releases and promote them into installed MCP servers fast.</div>
-                                <div class="browse-intro-copy">The top rail highlights recently updated servers. The explorer below stays optimized for discovery, exact-version installs, and direct upgrades when a newer registry version exists.</div>
-                            </div>
-                            <div class="browse-intro-card intro-secondary">
-                                <div class="browse-intro-kicker">Installed awareness</div>
-                                <div class="browse-intro-metric" x-text="$store.mcpServersStore.installedServers.filter((server) => server.registry_name).length"></div>
-                                <div class="browse-intro-copy">Registry-backed MCP servers are tracked against the latest published release so outdated installs can be updated directly from the registry view.</div>
-                            </div>
-                        </div>
-
-                        <div class="toolbar-row section-toolbar">
-                            <div>
-                                <div class="section-subtitle">Recently updated</div>
-                                <div class="section-description compact">Newest latest-version releases from the official MCP registry.</div>
-                            </div>
-                            <button class="button" :disabled="$store.mcpServersStore.recentRegistryLoading"
-                                @click="$store.mcpServersStore.loadRecentRegistryServers()">
-                                <span class="icon material-symbols-outlined">refresh</span>
-                                <span x-text="$store.mcpServersStore.recentRegistryLoading ? 'Refreshing...' : 'Refresh updates'"></span>
+                        <div class="pi-index-toolbar">
+                            <label class="pi-search-field">
+                                <span class="material-symbols-outlined">search</span>
+                                <input type="text"
+                                    class="pi-search-input"
+                                    x-model="$store.mcpServersStore.registryQuery"
+                                    @input="$store.mcpServersStore.scheduleRegistrySearch()"
+                                    placeholder="Search MCP servers by name...">
+                            </label>
+                            <label class="pi-sort-field">
+                                <span class="pi-field-label">Sort</span>
+                                <select class="pi-sort-select" x-model="$store.mcpServersStore.browseSortBy">
+                                    <option value="date">Recently Updated</option>
+                                    <option value="name">A – Z</option>
+                                </select>
+                            </label>
+                            <label class="pi-sort-field" x-show="!$store.mcpServersStore.registryQuery.trim()">
+                                <span class="pi-field-label">Recent</span>
+                                <select class="pi-sort-select" x-model.number="$store.mcpServersStore.browseRecentDays">
+                                    <option value="1">Today</option>
+                                    <option value="2">2 days</option>
+                                    <option value="3">3 days</option>
+                                    <option value="5">5 days</option>
+                                </select>
+                            </label>
+                            <label class="pi-sort-field">
+                                <span class="pi-field-label">Versions</span>
+                                <select class="pi-sort-select"
+                                    :value="$store.mcpServersStore.registryIncludeAllVersions"
+                                    @change="$store.mcpServersStore.registryIncludeAllVersions = $event.target.value === 'true'; $store.mcpServersStore.loadRegistryServers()">
+                                    <option value="false">Latest only</option>
+                                    <option value="true">All versions</option>
+                                </select>
+                            </label>
+                            <button type="button"
+                                class="button icon-button pi-reload-button"
+                                aria-label="Reload MCP Registry"
+                                title="Reload MCP Registry"
+                                @click="$store.mcpServersStore.loadRecentRegistryServers(); $store.mcpServersStore.loadRegistryServers()"
+                                :disabled="$store.mcpServersStore.registryLoading || $store.mcpServersStore.recentRegistryLoading">
+                                <span class="material-symbols-outlined">refresh</span>
                             </button>
                         </div>
 
-                        <div x-show="$store.mcpServersStore.recentRegistryError" class="error-banner" x-text="$store.mcpServersStore.recentRegistryError"></div>
-                        <div x-show="$store.mcpServersStore.recentRegistryLoading" class="loading">Loading recently updated MCP servers...</div>
-
-                        <div class="recent-update-grid" x-show="!$store.mcpServersStore.recentRegistryLoading && $store.mcpServersStore.recentRegistryCards().length">
-                            <template x-for="server in $store.mcpServersStore.recentRegistryCards()" :key="`recent:${server.key}`">
-                                <div class="recent-update-card">
-                                    <div class="recent-update-header">
-                                        <div>
-                                            <div class="recent-update-title" x-text="server.title || server.name"></div>
-                                            <div class="recent-update-subtitle" x-text="server.name"></div>
-                                        </div>
-                                        <div class="server-card-badges">
-                                            <span class="server-badge badge-accent" x-text="server.versions[0]?.version || 'latest'"></span>
-                                            <span class="server-badge" x-text="$store.mcpServersStore.formatRelativeDate(server.versions[0]?.updatedAt)"></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="server-card-description" x-text="server.description || 'No description provided.'"></div>
-
-                                    <div class="server-card-meta recent-meta-row">
-                                        <template x-if="server.versions[0]?.repository?.url || server.repository?.url">
-                                            <a class="meta-link" :href="server.versions[0]?.repository?.url || server.repository?.url" target="_blank" rel="noreferrer">Repository</a>
-                                        </template>
-                                        <template x-if="server.versions[0]?.websiteUrl || server.websiteUrl">
-                                            <a class="meta-link" :href="server.versions[0]?.websiteUrl || server.websiteUrl" target="_blank" rel="noreferrer">Website</a>
-                                        </template>
-                                        <template x-if="$store.mcpServersStore.hasInstalledUpdate(server.name, server.versions[0]?.version || 'latest')">
-                                            <span class="meta-pill accent">Update available</span>
-                                        </template>
-                                    </div>
-
-                                    <div class="recent-update-actions">
-                                        <button class="button subtle" @click="$store.mcpServersStore.openRegistryDetail(server.name, server.versions[0]?.version || 'latest')">
-                                            <span class="icon material-symbols-outlined">info</span>
-                                            Details
-                                        </button>
-                                        <button class="button primary" @click="$store.mcpServersStore.openInstallDialog(server.name, server.versions[0]?.version || 'latest')">
-                                            <span class="icon material-symbols-outlined">download</span>
-                                            Install latest
-                                        </button>
-                                        <template x-if="$store.mcpServersStore.hasInstalledUpdate(server.name, server.versions[0]?.version || 'latest')">
-                                            <button class="button update-button" @click="$store.mcpServersStore.updateInstalledRegistryServers(server.name, server.versions[0]?.version || 'latest')">
-                                                <span class="icon material-symbols-outlined">system_update_alt</span>
-                                                <span x-text="$store.mcpServersStore.installedUpdateLabel(server.name, server.versions[0]?.version || 'latest')"></span>
-                                            </button>
-                                        </template>
-                                    </div>
-                                </div>
+                        <div class="pi-filter-row" x-show="$store.mcpServersStore.browseFilters.length > 1">
+                            <template x-for="filter in $store.mcpServersStore.browseFilters" :key="filter.key">
+                                <button type="button"
+                                    class="pi-filter-chip"
+                                    :class="{
+                                        active: $store.mcpServersStore.browseFilter === filter.key,
+                                        'pi-filter-chip-update': filter.key === 'update' && filter.count > 0,
+                                        'pi-filter-chip-recent': filter.key === 'recent' && filter.count > 0
+                                    }"
+                                    @click="$store.mcpServersStore.setBrowseFilter(filter.key)">
+                                    <span x-text="filter.label"></span>
+                                    <span class="pi-filter-count" x-text="filter.count"></span>
+                                </button>
                             </template>
                         </div>
 
-                        <div class="toolbar-row section-toolbar search-section-toolbar">
+                        <div x-show="($store.mcpServersStore.registryLoading || $store.mcpServersStore.recentRegistryLoading) && !$store.mcpServersStore.filteredRegistryCards().length" class="pi-state-card pi-state-loading">
+                            <span class="material-symbols-outlined">progress_activity</span>
                             <div>
-                                <div class="section-subtitle">Find new MCP servers</div>
-                                <div class="section-description compact">Search by server name, inspect versions, and install or update directly from the version rows.</div>
+                                <div class="pi-state-title">Loading MCP Registry</div>
+                                <div class="pi-state-text">Fetching server entries...</div>
                             </div>
                         </div>
 
-                        <div class="toolbar-row browse-toolbar">
-                            <input class="search-input" type="text"
-                                x-model="$store.mcpServersStore.registryQuery"
-                                @input="$store.mcpServersStore.scheduleRegistrySearch()"
-                                placeholder="Search MCP servers by name" />
-                            <label class="checkbox-filter">
-                                <input type="checkbox"
-                                    x-model="$store.mcpServersStore.registryIncludeAllVersions"
-                                    @change="$store.mcpServersStore.loadRegistryServers()" />
-                                <span>All versions</span>
-                            </label>
-                            <button class="button" :disabled="$store.mcpServersStore.registryLoading"
-                                @click="$store.mcpServersStore.loadRegistryServers()">
-                                <span class="icon material-symbols-outlined">search</span>
-                                <span x-text="$store.mcpServersStore.registryLoading ? 'Searching...' : 'Search'"></span>
-                            </button>
+                        <div x-show="$store.mcpServersStore.registryError && !$store.mcpServersStore.registryLoading" class="pi-state-card pi-state-empty">
+                            <span class="material-symbols-outlined">error</span>
+                            <div>
+                                <div class="pi-state-title">Registry request failed</div>
+                                <div class="pi-state-text" x-text="$store.mcpServersStore.registryError"></div>
+                            </div>
                         </div>
 
-                        <div x-show="$store.mcpServersStore.registryError" class="error-banner" x-text="$store.mcpServersStore.registryError"></div>
-                        <div x-show="$store.mcpServersStore.registryLoading" class="loading">Loading registry servers...</div>
-
-                        <template x-if="!$store.mcpServersStore.registryLoading && $store.mcpServersStore.registryServers.length === 0 && !$store.mcpServersStore.registryError">
-                            <div class="empty-state">No registry servers found.</div>
+                        <template x-if="!$store.mcpServersStore.registryLoading && !$store.mcpServersStore.recentRegistryLoading && $store.mcpServersStore.filteredRegistryCards().length === 0 && !$store.mcpServersStore.registryError">
+                            <div class="pi-state-card pi-state-empty">
+                                <span class="material-symbols-outlined">search_off</span>
+                                <div>
+                                    <div class="pi-state-title">No MCP servers found</div>
+                                    <div class="pi-state-text">Try a different search term or filter.</div>
+                                </div>
+                            </div>
                         </template>
 
-                        <div class="server-grid">
-                            <template x-for="server in $store.mcpServersStore.registryCards()" :key="server.key">
-                                <div class="server-card registry-card">
-                                    <div class="server-card-header">
-                                        <div class="server-card-title-wrap">
-                                            <div class="server-card-title" x-text="server.title || server.name"></div>
-                                            <div class="server-card-badges">
+                        <div class="pi-grid">
+                            <template x-for="server in $store.mcpServersStore.filteredRegistryCards()" :key="server.key">
+                                <button type="button" class="pi-card"
+                                    @click="$store.mcpServersStore.openRegistryDetail(server.name, server.versions[0]?.version || 'latest', server.versions)">
+                                    <div class="pi-card-header">
+                                        <div class="pi-card-thumb">
+                                            <span class="material-symbols-outlined pi-card-placeholder">dns</span>
+                                        </div>
+                                        <div class="pi-card-heading">
+                                            <h3 class="pi-card-title" x-text="server.title || server.name"></h3>
+                                            <div class="pi-card-subtitle" x-text="server.name"></div>
+                                            <div class="mcp-reg-version-row">
                                                 <span class="server-badge badge-accent" x-text="server.versions.length === 1 ? (server.versions[0].version || 'latest') : `${server.versions.length} versions`"></span>
-                                                <template x-if="server.hasRemote">
-                                                    <span class="server-badge">Remote</span>
-                                                </template>
-                                                <template x-if="server.hasPackage">
-                                                    <span class="server-badge">Package</span>
+                                                <template x-if="server.versions[0]?.updatedAt">
+                                                    <span class="pi-card-subtitle" x-text="$store.mcpServersStore.formatRelativeDate(server.versions[0].updatedAt)"></span>
                                                 </template>
                                             </div>
                                         </div>
-                                        <div class="server-card-actions">
-                                            <span class="meta-item" x-show="server.status" x-text="server.status"></span>
+                                    </div>
+
+                                    <div class="pi-card-body">
+                                        <div class="pi-card-desc" x-text="$store.mcpServersStore.truncateDescription(server.description)"></div>
+                                    </div>
+
+                                    <div class="pi-card-footer">
+                                        <div class="pi-card-bubbles pi-card-bubbles-tags">
+                                            <template x-if="server.hasRemote">
+                                                <span class="pi-card-bubble pi-card-bubble-tag">
+                                                    <span class="material-symbols-outlined">cloud</span>
+                                                    <span class="pi-card-bubble-text">Remote</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="server.hasPackage">
+                                                <span class="pi-card-bubble pi-card-bubble-tag">
+                                                    <span class="material-symbols-outlined">package_2</span>
+                                                    <span class="pi-card-bubble-text">Package</span>
+                                                </span>
+                                            </template>
                                         </div>
-                                    </div>
-                                    <div class="server-card-description" x-text="server.description || 'No description provided.'"></div>
-                                    <div class="server-card-meta">
-                                        <span class="meta-item" x-text="server.name"></span>
-                                        <template x-if="server.repository?.url">
-                                            <a class="meta-link" :href="server.repository.url" target="_blank" rel="noreferrer">Repository</a>
-                                        </template>
-                                        <template x-if="server.websiteUrl">
-                                            <a class="meta-link" :href="server.websiteUrl" target="_blank" rel="noreferrer">Website</a>
-                                        </template>
-                                    </div>
-
-                                    <div class="registry-version-section">
-                                        <div class="registry-version-label">Versions</div>
-                                        <div class="registry-version-list">
-                                            <template x-for="version in server.versions" :key="$store.mcpServersStore.registryServerKey(version)">
-                                                <div class="registry-version-row">
-                                                    <button class="version-install"
-                                                        @click="$store.mcpServersStore.openInstallDialog(server.name, version.version || 'latest')">
-                                                        <span class="material-symbols-outlined">download</span>
-                                                        <span x-text="version.version || 'latest'"></span>
-                                                    </button>
-
-                                                    <div class="registry-version-meta">
-                                                        <template x-if="version.isLatest">
-                                                            <span class="server-badge badge-accent">Latest</span>
-                                                        </template>
-                                                        <template x-if="version.remotes?.length">
-                                                            <span class="server-badge">Remote</span>
-                                                        </template>
-                                                        <template x-if="version.packages?.length">
-                                                            <span class="server-badge">Package</span>
-                                                        </template>
-                                                        <template x-if="$store.mcpServersStore.installedRegistryVersion(server.name, version.version || 'latest')">
-                                                            <span class="server-badge">Installed</span>
-                                                        </template>
-                                                        <template x-if="version.isLatest && $store.mcpServersStore.hasInstalledUpdate(server.name, version.version || 'latest')">
-                                                            <span class="server-badge badge-accent">Update available</span>
-                                                        </template>
-                                                    </div>
-
-                                                    <button class="button subtle"
-                                                        @click="$store.mcpServersStore.openRegistryDetail(server.name, version.version || 'latest')">
-                                                        <span class="icon material-symbols-outlined">info</span>
-                                                        Details
-                                                    </button>
-
-                                                    <template x-if="version.isLatest && $store.mcpServersStore.hasInstalledUpdate(server.name, version.version || 'latest')">
-                                                        <button class="button update-button"
-                                                            @click="$store.mcpServersStore.updateInstalledRegistryServers(server.name, version.version || 'latest')">
-                                                            <span class="icon material-symbols-outlined">system_update_alt</span>
-                                                            <span x-text="$store.mcpServersStore.installedUpdateLabel(server.name, version.version || 'latest')"></span>
-                                                        </button>
-                                                    </template>
-                                                </div>
+                                        <div class="pi-card-bubbles pi-card-bubbles-status">
+                                            <template x-if="server.versions.some(v => $store.mcpServersStore.installedRegistryVersion(server.name, v.version || 'latest'))">
+                                                <span class="pi-card-bubble pi-card-bubble-installed">
+                                                    <span class="material-symbols-outlined">check_circle</span>
+                                                    <span class="pi-card-bubble-text">Installed</span>
+                                                </span>
+                                            </template>
+                                            <template x-if="$store.mcpServersStore.hasInstalledUpdate(server.name, server.versions[0]?.version || 'latest')">
+                                                <span class="pi-card-bubble pi-card-bubble-update">
+                                                    <span class="material-symbols-outlined">update</span>
+                                                    <span class="pi-card-bubble-text">Update</span>
+                                                </span>
                                             </template>
                                         </div>
                                     </div>
-                                </div>
+                                </button>
                             </template>
                         </div>
                     </div>
@@ -340,7 +323,74 @@
                     </div>
                 </template>
 
+                <template x-teleport="body">
                 <div class="install-mask"
+                    x-show="$store.mcpServersStore.applyStatusOpen"
+                    x-transition.opacity
+                    style="display:none;"
+                    @click.self="$store.mcpServersStore.closeApplyStatus()">
+                    <div class="install-panel apply-status-panel">
+                        <div class="install-panel-header">
+                            <div>
+                                <div class="section-title">Apply Configuration</div>
+                                <div class="section-description">MCP server status after applying the current configuration.</div>
+                            </div>
+                            <button class="button icon-button" @click="$store.mcpServersStore.closeApplyStatus()">
+                                <span class="icon material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <div x-show="$store.mcpServersStore.loading" class="loading">
+                            <span class="material-symbols-outlined" style="vertical-align:middle;font-size:1.1rem;">progress_activity</span>
+                            Applying MCP configuration...
+                        </div>
+
+                        <template x-if="!$store.mcpServersStore.loading">
+                            <div>
+                                <template x-if="$store.mcpServersStore.installedServers.length === 0">
+                                    <div class="empty-state">No MCP servers configured.</div>
+                                </template>
+
+                                <div class="apply-status-list">
+                                    <template x-for="server in $store.mcpServersStore.installedServers" :key="server.name">
+                                        <div class="apply-status-item">
+                                            <div class="apply-status-row">
+                                                <div class="apply-status-name" x-text="server.name"></div>
+                                                <div class="apply-status-badges">
+                                                    <span class="server-badge" x-text="server.type || 'stdio'"></span>
+                                                    <template x-if="server.disabled">
+                                                        <span class="server-badge badge-danger">Disabled</span>
+                                                    </template>
+                                                </div>
+                                                <span class="meta-item status-indicator"
+                                                    :class="`status-${server.health}`"
+                                                    x-text="server.disabled ? 'Disabled' : (server.connected ? 'Running' : (server.error ? 'Error' : 'Connecting...'))">
+                                                </span>
+                                                <span class="apply-tool-count" x-text="`${server.tool_count}/${server.total_tool_count} tools`"></span>
+                                                <button class="button subtle"
+                                                    :disabled="server.disabled || server.total_tool_count === 0"
+                                                    @click="$store.mcpServersStore.onToolCountClick(server.runtime_name)">
+                                                    <span class="icon material-symbols-outlined">build_circle</span> Tools
+                                                </button>
+                                            </div>
+                                            <template x-if="!server.disabled && server.error">
+                                                <div class="apply-status-error" x-text="server.error"></div>
+                                            </template>
+                                        </div>
+                                    </template>
+                                </div>
+
+                                <div class="toolbar-row toolbar-end" style="margin-top:1rem;">
+                                    <button class="button" @click="$store.mcpServersStore.closeApplyStatus()">Close</button>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+                </template>
+
+                <template x-teleport="body">
+                <div class="install-mask install-mask-top"
                     x-show="$store.mcpServersStore.installDialogOpen"
                     x-transition.opacity
                     style="display:none;"
@@ -348,7 +398,7 @@
                     <div class="install-panel">
                         <div class="install-panel-header">
                             <div>
-                                <div class="section-title">Install MCP Server</div>
+                                <div class="section-title" x-text="$store.mcpServersStore.installConfigureTarget ? 'Configure MCP Server' : 'Install MCP Server'"></div>
                                 <div class="section-description" x-text="$store.mcpServersStore.installDetail?.name || 'Loading registry server details'"></div>
                             </div>
                             <button class="button icon-button" @click="$store.mcpServersStore.closeInstallDialog()">
@@ -358,6 +408,7 @@
 
                         <div x-show="$store.mcpServersStore.installDialogLoading" class="loading">Loading install options...</div>
                         <div x-show="$store.mcpServersStore.installDialogError" class="error-banner" x-text="$store.mcpServersStore.installDialogError"></div>
+                        <div x-show="$store.mcpServersStore.installWarning" class="warning-banner" x-text="$store.mcpServersStore.installWarning"></div>
 
                         <template x-if="$store.mcpServersStore.installDetail && !$store.mcpServersStore.installDialogLoading">
                             <div>
@@ -410,13 +461,15 @@
 
                                 <div class="toolbar-row toolbar-end">
                                     <button class="button" @click="$store.mcpServersStore.closeInstallDialog()">Cancel</button>
-                                    <button class="button primary" @click="$store.mcpServersStore.confirmInstall()">Install Server</button>
+                                    <button class="button primary" @click="$store.mcpServersStore.confirmInstall()" x-text="$store.mcpServersStore.installConfigureTarget ? 'Save Configuration' : 'Install Server'"></button>
                                 </div>
                             </div>
                         </template>
                     </div>
                 </div>
+                </template>
 
+                <template x-teleport="body">
                 <div class="install-mask"
                     x-show="$store.mcpServersStore.registryDetailOpen"
                     x-transition.opacity
@@ -437,124 +490,226 @@
                         <div x-show="$store.mcpServersStore.registryDetailError" class="error-banner" x-text="$store.mcpServersStore.registryDetailError"></div>
 
                         <template x-if="$store.mcpServersStore.registryDetail && !$store.mcpServersStore.registryDetailLoading">
-                            <div>
-                                <div class="preview-card detail-hero-card">
-                                    <div class="detail-hero-header">
-                                        <div>
-                                            <div class="preview-card-title" x-text="$store.mcpServersStore.registryDetail.title || $store.mcpServersStore.registryDetail.name"></div>
-                                            <div class="detail-hero-subtitle" x-text="$store.mcpServersStore.registryDetail.name"></div>
-                                        </div>
-                                        <div class="detail-hero-badges">
-                                            <span class="server-badge badge-accent" x-text="$store.mcpServersStore.registryDetail.version || 'latest'"></span>
-                                            <span class="server-badge" x-text="$store.mcpServersStore.registryDetail.status || 'Unknown'"></span>
+                            <div class="pi-detail-container" x-data="{ versionMenuOpen: false }">
+
+                                <!-- Hero row -->
+                                <div class="pi-hero">
+                                    <div class="pi-hero-thumb">
+                                        <span class="material-symbols-outlined pi-hero-placeholder">lan</span>
+                                    </div>
+                                    <div class="pi-hero-info">
+                                        <h2 class="pi-hero-title" x-text="$store.mcpServersStore.registryDetail.title || $store.mcpServersStore.registryDetail.name"></h2>
+                                        <div class="pi-status-badges">
                                             <template x-if="$store.mcpServersStore.registryDetail.installedMatch">
-                                                <span class="server-badge">Installed</span>
+                                                <span class="pi-card-installed-pill">Installed</span>
+                                            </template>
+                                            <template x-if="$store.mcpServersStore.registryDetail.installedMatch && $store.mcpServersStore.hasInstalledUpdate($store.mcpServersStore.registryDetail.name, $store.mcpServersStore.registryDetail.version || 'latest')">
+                                                <span class="pi-card-update-pill">Update available</span>
+                                            </template>
+                                        </div>
+                                        <div class="pi-hero-meta">
+                                            <span class="pi-hero-meta-item">
+                                                <span class="pi-hero-label">Version</span>
+                                                <span x-text="$store.mcpServersStore.registryDetail.version || 'latest'"></span>
+                                            </span>
+                                            <template x-if="$store.mcpServersStore.registryDetail.updatedAt">
+                                                <span class="pi-hero-meta-item">
+                                                    <span class="pi-hero-label">Updated</span>
+                                                    <span x-text="$store.mcpServersStore.formatRelativeDate($store.mcpServersStore.registryDetail.updatedAt)"></span>
+                                                </span>
+                                            </template>
+                                            <span class="pi-hero-meta-item">
+                                                <span class="pi-hero-label">Transport</span>
+                                                <span x-text="`${($store.mcpServersStore.registryDetail.remotes || []).length} remote · ${($store.mcpServersStore.registryDetail.packages || []).length} package`"></span>
+                                            </span>
+                                            <template x-if="$store.mcpServersStore.registryDetailToolCount()">
+                                                <span class="pi-hero-meta-item">
+                                                    <span class="pi-hero-label">Tools</span>
+                                                    <span x-text="$store.mcpServersStore.registryDetailToolCount()"></span>
+                                                </span>
                                             </template>
                                         </div>
                                     </div>
-
-                                    <div class="server-card-description detail-hero-copy" x-text="$store.mcpServersStore.registryDetail.description || 'No description provided.'"></div>
-
-                                    <div class="detail-meta-grid detail-summary-grid">
-                                        <div class="detail-meta-item emphasis">
-                                            <span class="detail-meta-label">Updated</span>
-                                            <span x-text="$store.mcpServersStore.formatRelativeDate($store.mcpServersStore.registryDetail.updatedAt)"></span>
-                                        </div>
-                                        <div class="detail-meta-item">
-                                            <span class="detail-meta-label">Published</span>
-                                            <span x-text="$store.mcpServersStore.registryDetail.publishedAt || 'n/a'"></span>
-                                        </div>
-                                        <div class="detail-meta-item">
-                                            <span class="detail-meta-label">Transport Paths</span>
-                                            <span x-text="`${($store.mcpServersStore.registryDetail.remotes || []).length} remote • ${($store.mcpServersStore.registryDetail.packages || []).length} package`"></span>
-                                        </div>
-                                        <div class="detail-meta-item">
-                                            <span class="detail-meta-label">Tool Catalog</span>
-                                            <span x-text="$store.mcpServersStore.registryDetailToolCount() ? `${$store.mcpServersStore.registryDetailToolCount()} tools loaded` : 'Registry-only metadata'"></span>
-                                        </div>
-                                    </div>
-
-                                    <div class="server-card-meta detail-link-row">
-                                        <template x-if="$store.mcpServersStore.registryDetail.repository?.url">
-                                            <a class="meta-link" :href="$store.mcpServersStore.registryDetail.repository.url" target="_blank" rel="noreferrer">Repository</a>
-                                        </template>
-                                        <template x-if="$store.mcpServersStore.registryDetail.websiteUrl">
-                                            <a class="meta-link" :href="$store.mcpServersStore.registryDetail.websiteUrl" target="_blank" rel="noreferrer">Website</a>
-                                        </template>
-                                        <template x-if="$store.mcpServersStore.registryDetail.installedMatch">
-                                            <span class="meta-pill accent" x-text="`Installed as ${$store.mcpServersStore.registryDetail.installedMatch.name}`"></span>
-                                        </template>
-                                    </div>
                                 </div>
 
-                                <div class="detail-section-grid">
-                                    <template x-if="$store.mcpServersStore.registryDetail.remotes?.length">
-                                        <div class="preview-card">
-                                            <div class="preview-card-title">Remote Connections</div>
-                                            <div class="detail-section-note">Live endpoints published for this version.</div>
-                                            <div class="detail-stack">
-                                                <template x-for="remote in $store.mcpServersStore.registryDetail.remotes" :key="`${remote.type}:${remote.url}`">
-                                                    <div class="detail-block">
-                                                        <div class="server-card-meta compact-row">
-                                                            <span class="server-badge badge-accent" x-text="remote.type || 'remote'"></span>
-                                                            <span class="meta-item detail-url" x-text="remote.url"></span>
-                                                        </div>
-                                                        <template x-if="remote.headers?.length">
-                                                            <div class="detail-chip-row">
-                                                                <template x-for="header in remote.headers" :key="header.name">
-                                                                    <span class="meta-pill" x-text="header.name + (header.isRequired ? ' required' : '')"></span>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                        <template x-if="remote.variables && Object.keys(remote.variables).length">
-                                                            <div class="detail-subtext" x-text="`URL variables: ${Object.keys(remote.variables).join(', ')}`"></div>
-                                                        </template>
-                                                    </div>
+                                <!-- Description -->
+                                <div class="pi-description" x-text="$store.mcpServersStore.registryDetail.description || 'No description provided.'"></div>
+
+                                <!-- Actions -->
+                                <div class="pi-actions-primary">
+                                    <!-- Split install button -->
+                                    <template x-if="!$store.mcpServersStore.registryDetail.installedMatch">
+                                        <div class="mcp-install-split" @click.outside="versionMenuOpen = false">
+                                            <button class="pi-btn-install mcp-install-split-main"
+                                                :disabled="$store.mcpServersStore.registryDetailLoading"
+                                                @click="$store.mcpServersStore.tryDirectInstall($store.mcpServersStore.registryDetail.name, $store.mcpServersStore.registryDetail.version || 'latest')">
+                                                <template x-if="$store.mcpServersStore.registryDetailLoading">
+                                                    <span class="spinner" style="width:1.1rem;height:1.1rem;"></span>
+                                                    <span>Installing…</span>
                                                 </template>
-                                            </div>
+                                                <template x-if="!$store.mcpServersStore.registryDetailLoading">
+                                                    <span class="material-symbols-outlined">download</span>
+                                                    <span>Install</span>
+                                                </template>
+                                            </button>
+                                            <template x-if="$store.mcpServersStore.registryDetailVersions.length > 1">
+                                                <button class="mcp-install-split-arrow" @click="versionMenuOpen = !versionMenuOpen" title="Choose version">
+                                                    <span class="material-symbols-outlined">expand_more</span>
+                                                </button>
+                                            </template>
+                                            <template x-if="versionMenuOpen">
+                                                <div class="mcp-version-menu">
+                                                    <template x-for="(ver, idx) in $store.mcpServersStore.registryDetailVersions" :key="ver.version || idx">
+                                                        <button class="mcp-version-menu-item"
+                                                            @click="$store.mcpServersStore.tryDirectInstall($store.mcpServersStore.registryDetail.name, ver.version || 'latest'); versionMenuOpen = false">
+                                                            <span class="mcp-version-menu-tag" x-text="ver.version || 'latest'"></span>
+                                                            <template x-if="idx === 0">
+                                                                <span class="mcp-version-pill mcp-version-latest">latest</span>
+                                                            </template>
+                                                            <template x-if="$store.mcpServersStore.installedRegistryVersion($store.mcpServersStore.registryDetail.name, ver.version || 'latest')">
+                                                                <span class="mcp-version-pill mcp-version-installed">installed</span>
+                                                            </template>
+                                                            <span class="mcp-version-menu-date" x-text="$store.mcpServersStore.formatRelativeDate(ver.updatedAt)"></span>
+                                                        </button>
+                                                    </template>
+                                                </div>
+                                            </template>
                                         </div>
                                     </template>
 
-                                    <template x-if="$store.mcpServersStore.registryDetail.packages?.length">
-                                        <div class="preview-card">
-                                            <div class="preview-card-title">Package Installs</div>
-                                            <div class="detail-section-note">Runtime and input requirements for direct stdio installs.</div>
-                                            <div class="detail-stack">
-                                                <template x-for="pkg in $store.mcpServersStore.registryDetail.packages" :key="`${pkg.registryType || 'package'}:${pkg.identifier}`">
-                                                    <div class="detail-block">
-                                                        <div class="server-card-meta compact-row">
-                                                            <span class="server-badge" x-text="pkg.registryType || 'package'"></span>
-                                                            <span class="meta-item" x-text="pkg.identifier"></span>
-                                                        </div>
-                                                        <div class="detail-subtext" x-text="`Version: ${pkg.version || 'latest'}${pkg.runtimeHint ? ` • Runtime: ${pkg.runtimeHint}` : ''}`"></div>
-                                                        <template x-if="pkg.environmentVariables?.length">
-                                                            <div class="detail-chip-row">
-                                                                <template x-for="envVar in pkg.environmentVariables" :key="envVar.name">
-                                                                    <span class="meta-pill" x-text="envVar.name + (envVar.isRequired ? ' required' : '')"></span>
-                                                                </template>
-                                                            </div>
-                                                        </template>
-                                                        <template x-if="pkg.runtimeArguments?.length || pkg.packageArguments?.length">
-                                                            <div class="detail-subtext" x-text="`Arguments: ${(pkg.runtimeArguments || []).length} runtime • ${(pkg.packageArguments || []).length} package`"></div>
-                                                        </template>
-                                                    </div>
-                                                </template>
-                                            </div>
-                                        </div>
+                                    <!-- Update button (installed + update available) -->
+                                    <template x-if="$store.mcpServersStore.registryDetail.installedMatch && $store.mcpServersStore.hasInstalledUpdate($store.mcpServersStore.registryDetail.name, $store.mcpServersStore.registryDetail.version || 'latest')">
+                                        <button class="pi-btn-install"
+                                            :disabled="$store.mcpServersStore.registryDetailLoading"
+                                            @click="$store.mcpServersStore.tryDirectInstall($store.mcpServersStore.registryDetail.name, $store.mcpServersStore.registryDetail.version || 'latest')">
+                                            <template x-if="$store.mcpServersStore.registryDetailLoading">
+                                                <span class="spinner" style="width:1.1rem;height:1.1rem;"></span>
+                                                <span>Updating…</span>
+                                            </template>
+                                            <template x-if="!$store.mcpServersStore.registryDetailLoading">
+                                                <span class="material-symbols-outlined">system_update</span>
+                                                <span>Update</span>
+                                            </template>
+                                        </button>
+                                    </template>
+
+                                    <!-- Repository link -->
+                                    <template x-if="$store.mcpServersStore.registryDetail.repository?.url">
+                                        <a :href="$store.mcpServersStore.registryDetail.repository.url" target="_blank" rel="noreferrer" class="pi-btn-discussion">
+                                            <span class="material-symbols-outlined">code</span>
+                                            <span>Repository</span>
+                                        </a>
+                                    </template>
+
+                                    <!-- Website link -->
+                                    <template x-if="$store.mcpServersStore.registryDetail.websiteUrl">
+                                        <a :href="$store.mcpServersStore.registryDetail.websiteUrl" target="_blank" rel="noreferrer" class="pi-btn-discussion">
+                                            <span class="material-symbols-outlined">open_in_new</span>
+                                            <span>Website</span>
+                                        </a>
+                                    </template>
+
+                                    <!-- Configure button (installed + has inputs) -->
+                                    <template x-if="$store.mcpServersStore.registryDetail.installedMatch && $store.mcpServersStore.registryDetailHasInputs()">
+                                        <button type="button" class="pi-btn-configure"
+                                            @click="$store.mcpServersStore.openConfigureDialog($store.mcpServersStore.registryDetail.name, $store.mcpServersStore.registryDetail.version || 'latest')">
+                                            <span class="material-symbols-outlined">settings</span>
+                                            <span>Configure</span>
+                                        </button>
+                                    </template>
+
+                                    <!-- Uninstall button (installed) -->
+                                    <template x-if="$store.mcpServersStore.registryDetail.installedMatch">
+                                        <button type="button" class="pi-btn-uninstall"
+                                            @click="$confirmClick($event, () => $store.mcpServersStore.uninstallRegistryServer($store.mcpServersStore.registryDetail.installedMatch.name))">
+                                            <span class="material-symbols-outlined">delete</span>
+                                            <span>Uninstall</span>
+                                        </button>
                                     </template>
                                 </div>
 
-                                <div class="preview-card tool-catalog-card">
-                                    <div class="detail-section-header">
-                                        <div>
-                                            <div class="preview-card-title">Tool Catalog</div>
-                                            <div class="detail-section-note" x-text="$store.mcpServersStore.registryDetailToolMessage()"></div>
+                                <!-- Version timeline -->
+                                <template x-if="$store.mcpServersStore.registryDetailVersions.length > 0">
+                                    <div class="pi-version-section">
+                                        <div class="pi-version-header">Versions</div>
+                                        <div class="pi-version-grid">
+                                            <template x-for="(ver, idx) in $store.mcpServersStore.registryDetailVersions" :key="ver.version || idx">
+                                                <div class="pi-version-card">
+                                                    <div class="pi-version-label" x-text="idx === 0 ? 'Latest' : `v${idx + 1}`"></div>
+                                                    <div class="pi-version-name" x-text="ver.version || 'unknown'"></div>
+                                                    <div class="pi-version-time" x-text="$store.mcpServersStore.formatFullDate(ver.updatedAt) || 'Date unavailable'"></div>
+                                                    <template x-if="$store.mcpServersStore.installedRegistryVersion($store.mcpServersStore.registryDetail.name, ver.version || 'latest')">
+                                                        <span class="mcp-version-pill mcp-version-installed">installed</span>
+                                                    </template>
+                                                </div>
+                                            </template>
                                         </div>
+                                    </div>
+                                </template>
+
+                                <!-- Transport: Remotes -->
+                                <template x-if="$store.mcpServersStore.registryDetail.remotes?.length">
+                                    <div class="pi-version-section">
+                                        <div class="pi-version-header">Remote Connections</div>
+                                        <div class="detail-stack">
+                                            <template x-for="remote in $store.mcpServersStore.registryDetail.remotes" :key="`${remote.type}:${remote.url}`">
+                                                <div class="detail-block">
+                                                    <div class="server-card-meta compact-row">
+                                                        <span class="server-badge badge-accent" x-text="remote.type || 'remote'"></span>
+                                                        <span class="meta-item detail-url" x-text="remote.url"></span>
+                                                    </div>
+                                                    <template x-if="remote.headers?.length">
+                                                        <div class="detail-chip-row">
+                                                            <template x-for="header in remote.headers" :key="header.name">
+                                                                <span class="meta-pill" x-text="header.name + (header.isRequired ? ' required' : '')"></span>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="remote.variables && Object.keys(remote.variables).length">
+                                                        <div class="detail-subtext" x-text="`URL variables: ${Object.keys(remote.variables).join(', ')}`"></div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Transport: Packages -->
+                                <template x-if="$store.mcpServersStore.registryDetail.packages?.length">
+                                    <div class="pi-version-section">
+                                        <div class="pi-version-header">Package Installs</div>
+                                        <div class="detail-stack">
+                                            <template x-for="pkg in $store.mcpServersStore.registryDetail.packages" :key="`${pkg.registryType || 'package'}:${pkg.identifier}`">
+                                                <div class="detail-block">
+                                                    <div class="server-card-meta compact-row">
+                                                        <span class="server-badge" x-text="pkg.registryType || 'package'"></span>
+                                                        <span class="meta-item" x-text="pkg.identifier"></span>
+                                                    </div>
+                                                    <div class="detail-subtext" x-text="`Version: ${pkg.version || 'latest'}${pkg.runtimeHint ? ` • Runtime: ${pkg.runtimeHint}` : ''}`"></div>
+                                                    <template x-if="pkg.environmentVariables?.length">
+                                                        <div class="detail-chip-row">
+                                                            <template x-for="envVar in pkg.environmentVariables" :key="envVar.name">
+                                                                <span class="meta-pill" x-text="envVar.name + (envVar.isRequired ? ' required' : '')"></span>
+                                                            </template>
+                                                        </div>
+                                                    </template>
+                                                    <template x-if="pkg.runtimeArguments?.length || pkg.packageArguments?.length">
+                                                        <div class="detail-subtext" x-text="`Arguments: ${(pkg.runtimeArguments || []).length} runtime • ${(pkg.packageArguments || []).length} package`"></div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- Tool Catalog -->
+                                <div class="pi-version-section">
+                                    <div class="pi-version-header" style="display:flex;align-items:center;justify-content:space-between;">
+                                        <span>Tool Catalog</span>
                                         <template x-if="$store.mcpServersStore.registryDetailToolCount()">
-                                            <div class="detail-summary-chip" x-text="`${$store.mcpServersStore.registryDetailToolCount()} tools`"></div>
+                                            <span class="detail-summary-chip" x-text="`${$store.mcpServersStore.registryDetailToolCount()} tools`"></span>
                                         </template>
                                     </div>
-
                                     <template x-if="$store.mcpServersStore.registryDetailToolCount()">
                                         <div class="tool-catalog-grid">
                                             <template x-for="tool in ($store.mcpServersStore.registryDetail.tools || [])" :key="tool.name">
@@ -581,25 +736,20 @@
                                             </template>
                                         </div>
                                     </template>
-
                                     <template x-if="!$store.mcpServersStore.registryDetailToolCount()">
-                                        <div class="detail-empty-state" x-text="$store.mcpServersStore.registryDetailToolMessage()"></div>
+                                        <div class="detail-section-note" x-text="$store.mcpServersStore.registryDetailToolMessage()"></div>
                                     </template>
                                 </div>
 
-                                <div class="preview-card">
-                                    <div class="preview-card-title">Registry JSON</div>
-                                    <pre class="config-preview" x-text="$store.mcpServersStore.registryDetailJson()"></pre>
-                                </div>
-
-                                <div class="toolbar-row toolbar-end">
+                                <!-- Close -->
+                                <div class="toolbar-row toolbar-end" style="margin-top:0.5rem;">
                                     <button class="button" @click="$store.mcpServersStore.closeRegistryDetail()">Close</button>
-                                    <button class="button primary" @click="$store.mcpServersStore.openInstallDialog($store.mcpServersStore.registryDetail.name, $store.mcpServersStore.registryDetail.version || 'latest')">Install This Version</button>
                                 </div>
                             </div>
                         </template>
                     </div>
                 </div>
+                </template>
             </div>
         </template>
     </div>
@@ -680,64 +830,6 @@
             margin-top: 0.2rem;
         }
 
-        .browse-intro-grid {
-            display: grid;
-            grid-template-columns: minmax(0, 1.4fr) minmax(16rem, 0.8fr);
-            gap: 0.85rem;
-            margin-top: 1rem;
-        }
-
-        .browse-intro-card {
-            position: relative;
-            overflow: hidden;
-            border-radius: 18px;
-            padding: 1rem 1.05rem;
-            border: 1px solid color-mix(in srgb, var(--color-border) 74%, transparent);
-            box-shadow: 0 18px 42px rgba(3, 10, 18, 0.08);
-        }
-
-        .intro-primary {
-            background:
-                radial-gradient(circle at top right, color-mix(in srgb, var(--color-secondary) 24%, transparent), transparent 42%),
-                linear-gradient(180deg, color-mix(in srgb, var(--color-background) 92%, white 8%), var(--color-background));
-        }
-
-        .intro-secondary {
-            background:
-                linear-gradient(160deg, color-mix(in srgb, var(--color-bg-secondary) 88%, transparent), color-mix(in srgb, var(--color-background) 94%, transparent));
-        }
-
-        .browse-intro-kicker {
-            font-size: 0.72rem;
-            font-weight: 700;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: var(--color-text-secondary);
-        }
-
-        .browse-intro-title {
-            margin-top: 0.45rem;
-            font-size: 1.15rem;
-            font-weight: 700;
-            line-height: 1.25;
-            color: var(--color-text-primary);
-        }
-
-        .browse-intro-copy {
-            margin-top: 0.45rem;
-            font-size: 0.92rem;
-            line-height: 1.5;
-            color: var(--color-text-secondary);
-        }
-
-        .browse-intro-metric {
-            margin-top: 0.5rem;
-            font-size: 2rem;
-            font-weight: 800;
-            line-height: 1;
-            color: var(--color-text-primary);
-        }
-
         .browse-toolbar .search-input {
             flex: 1 1 22rem;
         }
@@ -752,70 +844,482 @@
             color: var(--color-text-primary);
         }
 
-        .checkbox-filter {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            min-height: 2.25rem;
-            padding: 0 0.25rem;
+        /* ── pi-browse-shell (shared style baseline with Plugins/Skills hubs) ── */
+        .pi-browse-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .pi-browse-hero {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 1rem;
+            padding: 0.25rem 0 0.35rem;
+        }
+
+        .pi-browse-copy {
+            max-width: 44rem;
+        }
+
+        .pi-browse-eyebrow {
+            margin-bottom: 0.4rem;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--color-secondary);
+        }
+
+        .pi-browse-title {
+            margin: 0;
+            font-size: 1.6rem;
+            line-height: 1.15;
             color: var(--color-text-primary);
-            user-select: none;
+        }
+
+        .pi-browse-description {
+            margin: 0.5rem 0 0;
+            max-width: 38rem;
+            font-size: 0.95rem;
+            line-height: 1.55;
+            color: var(--color-text-secondary);
+        }
+
+        .pi-browse-summary {
+            flex-shrink: 0;
+            padding: 0.6rem 0.85rem;
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            background: var(--color-bg-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .pi-index-toolbar {
+            display: flex;
+            gap: 0.75rem;
+            align-items: stretch;
+        }
+
+        .pi-search-field,
+        .pi-sort-field {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+            padding: 0.55rem 0;
+            border: 0;
+            border-bottom: 1px solid var(--color-border);
+            border-radius: 0;
+        }
+
+        .pi-search-field {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pi-search-field .material-symbols-outlined {
+            font-size: 1.15rem;
+            color: var(--color-text-secondary);
+        }
+
+        .pi-search-input {
+            width: 100%;
+            min-width: 0;
+            padding: 0;
+            border: 0;
+            outline: none;
+            background: transparent;
+            color: var(--color-text-primary);
+            font-size: 0.95rem;
+            font-family: var(--font-family-body);
+        }
+
+        .pi-sort-field {
+            min-width: 140px;
+            flex-shrink: 0;
+            justify-content: space-between;
+        }
+
+        .pi-field-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--color-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
             white-space: nowrap;
         }
 
-        .checkbox-filter input {
-            width: 1rem;
-            height: 1rem;
-            margin: 0;
-            accent-color: var(--color-secondary);
+        .pi-sort-select {
+            width: 100%;
+            padding: 0;
+            border: 0;
+            outline: none;
+            background: transparent;
+            color: var(--color-text-primary);
+            font-size: 0.95rem;
+            font-family: var(--font-family-body);
         }
 
-        .recent-update-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr));
-            gap: 0.85rem;
-            margin-top: 0.85rem;
+        .pi-reload-button {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.45rem 0.6rem;
         }
 
-        .recent-update-card {
-            border-radius: 16px;
-            padding: 0.95rem;
-            border: 1px solid color-mix(in srgb, #db7a2c 24%, var(--color-border));
-            background:
-                radial-gradient(circle at top right, rgba(219, 122, 44, 0.2), transparent 44%),
-                linear-gradient(180deg, color-mix(in srgb, #fff5ea 78%, var(--color-background)), var(--color-background));
-            box-shadow: 0 16px 34px rgba(45, 23, 7, 0.08);
+        .pi-reload-button .material-symbols-outlined {
+            font-size: 1.1rem;
         }
 
-        .recent-update-header {
+        .pi-filter-row {
             display: flex;
-            justify-content: space-between;
-            align-items: start;
-            gap: 0.85rem;
+            flex-wrap: wrap;
+            gap: 0.6rem;
         }
 
-        .recent-update-title {
-            font-size: 1rem;
-            font-weight: 700;
+        .pi-filter-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.45rem 0.75rem;
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            background: var(--color-bg-secondary);
+            color: var(--color-text-secondary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: border-color 0.15s, background 0.15s, color 0.15s;
+        }
+
+        .pi-filter-chip:hover {
             color: var(--color-text-primary);
         }
 
-        .recent-update-subtitle {
+        .pi-filter-chip.active {
+            border-color: color-mix(in srgb, var(--color-secondary) 30%, var(--color-border));
+            background: color-mix(in srgb, var(--color-secondary) 8%, var(--color-bg-secondary));
+            color: var(--color-text-primary);
+        }
+
+        .pi-filter-chip-update {
+            border-color: color-mix(in srgb, var(--color-secondary) 22%, var(--color-border));
+            color: var(--color-secondary);
+        }
+
+        .pi-filter-chip-update.active {
+            background: color-mix(in srgb, var(--color-secondary) 12%, var(--color-bg-secondary));
+        }
+
+        .pi-filter-chip-recent {
+            border-color: color-mix(in srgb, #4ade80 28%, var(--color-border));
+            color: #4ade80;
+        }
+
+        body.light-mode .pi-filter-chip-recent {
+            color: #166534;
+            border-color: color-mix(in srgb, #166534 28%, var(--color-border));
+        }
+
+        .pi-filter-chip-recent.active {
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        body.light-mode .pi-filter-chip-recent.active {
+            background: rgba(22, 101, 52, 0.1);
+        }
+
+        .pi-filter-count {
+            padding: 0.12rem 0.4rem;
+            border-radius: 0.5rem;
+            background: color-mix(in srgb, var(--color-border) 50%, transparent);
+            color: var(--color-text-secondary);
+            font-size: 0.75rem;
+        }
+
+        .pi-state-card {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            padding: 1rem 1.05rem;
+            border: 1px solid var(--color-border);
+            border-radius: 14px;
+            background: var(--color-bg-secondary);
+        }
+
+        .pi-state-card .material-symbols-outlined {
+            font-size: 1.5rem;
+        }
+
+        .pi-state-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--color-text-primary);
+        }
+
+        .pi-state-text {
+            margin-top: 0.15rem;
+            font-size: 0.88rem;
+            color: var(--color-text-secondary);
+        }
+
+        .pi-state-loading .material-symbols-outlined {
+            color: var(--color-secondary);
+        }
+
+        .pi-state-empty .material-symbols-outlined {
+            color: var(--color-text-secondary);
+        }
+
+        /* ── pi-card (shared with Plugins/Skills hub) ── */
+        .pi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+            gap: 0.95rem;
+        }
+
+        .pi-card {
+            width: 100%;
+            padding: 0;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            background: var(--color-background);
+            color: inherit;
+            text-align: left;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .pi-card:hover {
+            border-color: color-mix(in srgb, var(--color-secondary) 30%, var(--color-border));
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.18);
+        }
+
+        .pi-card-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem;
+        }
+
+        .pi-card-thumb {
+            width: 48px;
+            height: 48px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 0.5rem;
+            overflow: hidden;
+            background: radial-gradient(circle at top, color-mix(in srgb, var(--color-secondary) 16%, transparent), var(--color-bg-secondary)),
+                var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+        }
+
+        .pi-card-placeholder {
+            font-size: 1.85rem;
+            color: var(--color-text-secondary);
+        }
+
+        .pi-card-heading {
+            min-width: 0;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .pi-card-title {
+            margin: 0;
+            font-size: 0.95rem;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--color-text-primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .pi-card-subtitle {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .mcp-reg-version-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
             margin-top: 0.2rem;
+            flex-wrap: wrap;
+        }
+
+        .pi-card-body {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 0 0.85rem 0.85rem;
+        }
+
+        .pi-card-desc {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--color-text-secondary);
+        }
+
+        .pi-card-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+            padding: 0.6rem 0.85rem 0.7rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .pi-card-bubbles {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            flex-shrink: 0;
+        }
+
+        .pi-card-bubbles-tags {
+            min-width: 0;
+            flex: 1 1 auto;
+            justify-content: flex-start;
+        }
+
+        .pi-card-bubbles-status {
+            justify-content: flex-end;
+        }
+
+        .pi-card-bubble {
+            display: inline-flex;
+            align-items: center;
+            height: 24px;
+            padding: 0 0.45rem;
+            border-radius: 6px;
+            border: 1px solid var(--color-border);
+            background: var(--color-bg-secondary);
+            overflow: hidden;
+            cursor: default;
+            transition: background 0.2s ease, border-color 0.2s ease;
+        }
+
+        .pi-card-bubble .material-symbols-outlined {
+            font-size: 0.95rem;
+            flex-shrink: 0;
+            line-height: 1;
+        }
+
+        .pi-card-bubble-text {
+            max-width: 0;
+            opacity: 0;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 0.72rem;
+            font-weight: 600;
+            transition: max-width 0.25s ease, opacity 0.2s ease, margin-left 0.2s ease;
+            margin-left: 0;
+        }
+
+        .pi-card-bubbles-tags .pi-card-bubble {
+            min-width: 0;
+            max-width: 100%;
+        }
+
+        .pi-card-bubbles-tags .pi-card-bubble-text {
+            flex: 1 1 auto;
+            min-width: 0;
+            max-width: 7rem;
+            opacity: 1;
+            margin-left: 0.3rem;
+            text-overflow: ellipsis;
+        }
+
+        .pi-card-bubbles-status .pi-card-bubble:hover .pi-card-bubble-text {
+            max-width: 8rem;
+            opacity: 1;
+            margin-left: 0.3rem;
+        }
+
+        .pi-card-bubble-tag .material-symbols-outlined { color: var(--color-text-secondary); }
+        .pi-card-bubble-tag .pi-card-bubble-text { color: var(--color-text-secondary); }
+
+        .pi-card-bubble-installed .material-symbols-outlined { color: #4ade80; }
+        .pi-card-bubble-installed .pi-card-bubble-text { color: #4ade80; }
+        .pi-card-bubble-installed:hover { background: rgba(34, 197, 94, 0.1); border-color: rgba(34, 197, 94, 0.3); }
+
+        .pi-card-bubble-update .material-symbols-outlined { color: #60a5fa; }
+        .pi-card-bubble-update .pi-card-bubble-text { color: #60a5fa; }
+        .pi-card-bubble-update:hover { background: rgba(59, 130, 246, 0.1); border-color: rgba(59, 130, 246, 0.3); }
+
+        body.light-mode .pi-card-bubble-installed .material-symbols-outlined,
+        body.light-mode .pi-card-bubble-installed .pi-card-bubble-text { color: #166534; }
+        body.light-mode .pi-card-bubble-update .material-symbols-outlined,
+        body.light-mode .pi-card-bubble-update .pi-card-bubble-text { color: #1d4ed8; }
+
+        /* ── Apply Now status panel ── */
+        .apply-status-panel {
+            max-width: 52rem;
+        }
+
+        .apply-status-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            margin-top: 0.85rem;
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+
+        .apply-status-item {
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            padding: 0.75rem 0.85rem;
+            background: var(--color-background);
+        }
+
+        .apply-status-row {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+
+        .apply-status-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            flex: 1 1 8rem;
+            min-width: 0;
+        }
+
+        .apply-status-badges {
+            display: flex;
+            gap: 0.35rem;
+            flex-wrap: wrap;
+        }
+
+        .apply-tool-count {
             font-size: 0.82rem;
             color: var(--color-text-secondary);
-            overflow-wrap: anywhere;
+            white-space: nowrap;
         }
 
-        .recent-meta-row {
-            align-items: center;
-        }
-
-        .recent-update-actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.55rem;
-            margin-top: 0.9rem;
+        .apply-status-error {
+            margin-top: 0.5rem;
+            font-size: 0.82rem;
+            color: var(--color-error);
+            padding-left: 0.25rem;
         }
 
         .meta-pill {
@@ -832,6 +1336,27 @@
         .meta-pill.accent {
             color: var(--color-secondary);
             border-color: color-mix(in srgb, var(--color-secondary) 32%, var(--color-border));
+        }
+
+        .installed-update-notice {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.6rem 0.85rem;
+            margin-top: 0.5rem;
+            border-radius: 8px;
+            border: 1px solid color-mix(in srgb, #f59e0b 30%, var(--color-border));
+            background: color-mix(in srgb, #f59e0b 8%, var(--color-bg-secondary));
+            font-size: 0.88rem;
+            color: var(--color-text-primary);
+        }
+        .installed-update-notice .material-symbols-outlined {
+            font-size: 1.1rem;
+            color: #f59e0b;
+            flex-shrink: 0;
+        }
+        .installed-update-notice span:not(.material-symbols-outlined) {
+            flex: 1;
         }
 
         .server-grid {
@@ -1141,6 +1666,14 @@
             color: var(--color-error);
         }
 
+        .warning-banner {
+            margin-top: 0.75rem;
+            padding: 0.65rem 0.8rem;
+            border-radius: 8px;
+            background: var(--color-warning-bg, rgba(255, 180, 0, 0.12));
+            color: var(--color-warning, #c68000);
+        }
+
         .danger {
             color: var(--color-error);
         }
@@ -1148,13 +1681,17 @@
         .install-mask {
             position: fixed;
             inset: 0;
-            z-index: 1000;
+            z-index: 4000;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 1rem;
             background: color-mix(in srgb, #08121d 64%, transparent);
             backdrop-filter: blur(8px);
+        }
+
+        .install-mask-top {
+            z-index: 4002;
         }
 
         .install-panel {
@@ -1449,7 +1986,7 @@
         }
 
         @media (max-width: 760px) {
-            .browse-intro-grid,
+            .pi-browse-hero,
             .server-card-header,
             .install-panel-header,
             .field-row {
@@ -1465,19 +2002,26 @@
             }
 
             .section-toolbar,
-            .recent-update-header,
-            .recent-update-actions,
             .registry-version-row,
             .detail-hero-header,
             .detail-section-header,
-            .tool-card-header {
+            .tool-card-header,
+            .apply-status-row {
                 align-items: stretch;
+            }
+
+            .pi-index-toolbar {
+                flex-wrap: wrap;
+            }
+
+            .pi-sort-field {
+                min-width: 0;
+                flex: 1 1 auto;
             }
 
             .switch-toggle,
             .server-card-actions .button,
             .server-card-actions .meta-item,
-            .recent-update-actions .button,
             .registry-version-row .button,
             .registry-version-row .version-install,
             .toolbar-row .button,
@@ -1485,6 +2029,419 @@
             .toolbar-end .button {
                 width: 100%;
             }
+
+            .pi-btn-install,
+            .pi-btn-uninstall,
+            .pi-btn-discussion,
+            .mcp-install-split {
+                flex: 1;
+            }
+
+            .mcp-install-split-main,
+            .mcp-install-split-arrow {
+                width: auto;
+                flex: 1;
+            }
+
+            .mcp-install-split-arrow {
+                flex: 0 0 auto;
+                min-width: 0;
+                width: auto;
+                padding: 0 0.75rem;
+            }
+        }
+
+        /* ── pi-detail layout ── */
+        .pi-detail-container {
+            padding: 1rem;
+        }
+
+        .pi-hero {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.25rem;
+            margin-bottom: 1.25rem;
+        }
+
+        .pi-hero-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 14px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, #6b728066, var(--color-panel)), var(--color-panel);
+            border: 1px solid var(--color-border);
+        }
+
+        .pi-hero-placeholder {
+            font-size: 2.8rem;
+            color: var(--color-text-muted);
+        }
+
+        .pi-hero-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .pi-hero-title {
+            margin: 0 0 0.4rem;
+            font-size: 1.5rem;
+            font-weight: 600;
+            line-height: 1.2;
+            color: var(--color-text-primary);
+        }
+
+        .pi-status-badges {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .pi-card-installed-pill {
+            display: inline-flex;
+            padding: 0.22rem 0.55rem;
+            border-radius: 0.5rem;
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        body.light-mode .pi-card-installed-pill {
+            background: rgba(34, 197, 94, 0.22);
+            color: #166534;
+        }
+
+        .pi-card-update-pill {
+            display: inline-flex;
+            padding: 0.22rem 0.55rem;
+            border-radius: 0.5rem;
+            background: rgba(59, 130, 246, 0.16);
+            color: #60a5fa;
+            font-size: 0.72rem;
+            font-weight: 700;
+        }
+
+        body.light-mode .pi-card-update-pill {
+            background: rgba(59, 130, 246, 0.2);
+            color: #1d4ed8;
+        }
+
+        .pi-hero-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem 1.25rem;
+        }
+
+        .pi-hero-meta-item {
+            display: inline-flex;
+            align-items: baseline;
+            gap: 0.3rem;
+            font-size: 0.88rem;
+            color: var(--color-text-secondary);
+        }
+
+        .pi-hero-label {
+            font-size: 0.78rem;
+            color: var(--color-text-muted);
+            font-weight: 600;
+        }
+
+        .pi-description {
+            font-size: 0.96rem;
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+            margin-bottom: 1.25rem;
+        }
+
+        /* Actions row */
+        .pi-actions-primary {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+            align-items: stretch;
+        }
+
+        .pi-btn-install {
+            flex: 1;
+            min-width: 160px;
+            padding: 0.75rem 1.25rem;
+            border: none;
+            border-radius: 8px;
+            background: var(--color-highlight);
+            color: #fff;
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: opacity 0.15s, box-shadow 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .pi-btn-install:hover:not(:disabled) {
+            opacity: 0.88;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.18);
+        }
+
+        .pi-btn-install:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .pi-btn-install .material-symbols-outlined {
+            font-size: 1.2rem;
+        }
+
+        .pi-btn-uninstall {
+            flex: 1;
+            min-width: 160px;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid var(--color-accent);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-accent);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .pi-btn-uninstall:hover {
+            background: var(--color-accent);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .pi-btn-configure {
+            flex: 1;
+            min-width: 160px;
+            padding: 0.75rem 1.25rem;
+            border: 2px solid var(--color-border, rgba(255,255,255,0.15));
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-text-secondary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+        }
+
+        .pi-btn-configure:hover {
+            border-color: var(--color-text-primary, #fff);
+            color: var(--color-text-primary, #fff);
+            background: rgba(255,255,255,0.05);
+        }
+
+        .pi-btn-discussion {
+            flex: 1;
+            min-width: 160px;
+            padding: 0.75rem 1.25rem;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-text);
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.4rem;
+            text-decoration: none;
+        }
+
+        .pi-btn-discussion:hover {
+            background: var(--color-highlight);
+            color: #fff;
+            border-color: var(--color-highlight);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .pi-btn-discussion .material-symbols-outlined {
+            font-size: 1.2rem;
+        }
+
+        /* Split install button */
+        .mcp-install-split {
+            display: flex;
+            align-items: stretch;
+            border-radius: 8px;
+            overflow: visible;
+            position: relative;
+            flex: 1;
+            min-width: 160px;
+        }
+
+        .mcp-install-split-main {
+            flex: 1;
+            border-radius: 8px 0 0 8px;
+            min-width: 0;
+        }
+
+        .mcp-install-split-main:only-child {
+            border-radius: 8px;
+        }
+
+        .mcp-install-split-arrow {
+            flex-shrink: 0;
+            padding: 0 0.8rem;
+            border: none;
+            border-left: 1px solid rgba(255,255,255,0.25);
+            border-radius: 0 8px 8px 0;
+            background: var(--color-highlight);
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: opacity 0.15s;
+        }
+
+        .mcp-install-split-arrow:hover {
+            opacity: 0.85;
+        }
+
+        .mcp-install-split-arrow .material-symbols-outlined {
+            font-size: 1.2rem;
+        }
+
+        .mcp-version-menu {
+            position: absolute;
+            top: calc(100% + 6px);
+            left: 0;
+            min-width: 100%;
+            background: var(--color-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.22);
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .mcp-version-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.9rem;
+            width: 100%;
+            border: none;
+            background: transparent;
+            color: var(--color-text);
+            font-size: 0.9rem;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.1s;
+        }
+
+        .mcp-version-menu-item:hover {
+            background: var(--color-panel);
+        }
+
+        .mcp-version-menu-tag {
+            font-weight: 600;
+            color: var(--color-text-primary);
+            flex: 1;
+        }
+
+        .mcp-version-menu-date {
+            font-size: 0.8rem;
+            color: var(--color-text-muted);
+            margin-left: auto;
+        }
+
+        .mcp-version-pill {
+            display: inline-flex;
+            padding: 0.15rem 0.45rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .mcp-version-latest {
+            background: rgba(139, 92, 246, 0.18);
+            color: #a78bfa;
+        }
+
+        .mcp-version-installed {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        body.light-mode .mcp-version-latest {
+            background: rgba(109, 40, 217, 0.14);
+            color: #6d28d9;
+        }
+
+        body.light-mode .mcp-version-installed {
+            background: rgba(34, 197, 94, 0.2);
+            color: #166534;
+        }
+
+        /* Version section (shared with pi pattern) */
+        .pi-version-section {
+            margin-bottom: 1.25rem;
+            padding-top: 1.25rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .pi-version-header {
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        .pi-version-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 0.6rem;
+        }
+
+        .pi-version-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            padding: 0.75rem 0.9rem;
+            border: 1px solid var(--color-border);
+            border-radius: 10px;
+        }
+
+        .pi-version-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+        }
+
+        .pi-version-name {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .pi-version-time {
+            font-size: 0.8rem;
+            color: var(--color-text-secondary);
         }
     </style>
 </body>

@@ -61,6 +61,8 @@ class Skills(ApiHandler):
                 data = self.registry_download(input)
             elif action == "registry_update":
                 data = self.registry_update(input)
+            elif action == "skill_tree":
+                data = self.skill_tree(input)
             else:
                 raise Exception("Invalid action")
 
@@ -114,6 +116,22 @@ class Skills(ApiHandler):
             })
         result.sort(key=lambda x: (x["name"], x["path"]))
         return result
+
+    def skill_tree(self, input: Input):
+        skill_path = str(input.get("skill_path") or "").strip()
+        if not skill_path:
+            raise Exception("skill_path is required")
+        resolved = files.get_abs_path(skill_path)
+        if runtime.is_development():
+            resolved = files.fix_dev_path(resolved)
+        allowed_roots = skills.get_skill_roots()
+        for root in allowed_roots:
+            if files.is_in_dir(resolved, root):
+                break
+        else:
+            raise ValueError("Skill path is not within allowed skill roots")
+        tree = skills._get_skill_files(Path(resolved))
+        return {"tree": tree}
 
     def delete_skill(self, input: Input):
         skill_path = str(input.get("skill_path") or "").strip()
@@ -365,6 +383,46 @@ class Skills(ApiHandler):
             "updatedAt": payload.get("updatedAt"),
         }
 
+    def _build_skill_file_tree(self, slug: str, skill_files: list) -> str:
+        raw_paths = [
+            str(f.get("path") or "").strip().lstrip("/")
+            for f in (skill_files or [])
+            if isinstance(f, dict) and str(f.get("path") or "").strip()
+        ]
+        paths = sorted({"SKILL.md"} | set(raw_paths))
+
+        root: dict = {"dirs": {}, "files": []}
+        for path in paths:
+            parts = [p for p in path.split("/") if p]
+            node = root
+            for part in parts[:-1]:
+                if part not in node["dirs"]:
+                    node["dirs"][part] = {"dirs": {}, "files": []}
+                node = node["dirs"][part]
+            if parts:
+                node["files"].append(parts[-1])
+
+        lines = [f"{slug}/"]
+
+        def render_node(node: dict, prefix: str = "") -> None:
+            entries: list[tuple[str, str]] = []
+            for name in sorted(node["dirs"]):
+                entries.append(("dir", name))
+            for name in sorted(node["files"]):
+                entries.append(("file", name))
+            for i, (kind, name) in enumerate(entries):
+                is_last = i == len(entries) - 1
+                connector = "└── " if is_last else "├── "
+                extension = "    " if is_last else "│   "
+                if kind == "dir":
+                    lines.append(f"{prefix}{connector}{name}/")
+                    render_node(node["dirs"][name], prefix + extension)
+                else:
+                    lines.append(f"{prefix}{connector}{name}")
+
+        render_node(root)
+        return "\n".join(lines)
+
     def registry_detail(self, input: Input):
         owner = str(input.get("owner") or "").strip()
         slug = str(input.get("slug") or "").strip()
@@ -378,16 +436,31 @@ class Skills(ApiHandler):
         source_url = REGISTRY_SKILL_URL.format(owner=quote(canonical_owner, safe=""), slug=quote(public_slug, safe=""))
         quality_url = f"{source_url}/quality"
         security_url = f"{source_url}/security"
+        skill_files = payload.get("skillFiles") or []
+        skill_tree = self._build_skill_file_tree(public_slug, skill_files)
+        skill_md_content = payload.get("skillMd") or payload.get("content") or ""
+        explorer_files: list[dict] = [
+            {"path": "SKILL.md", "content": skill_md_content, "size": len(skill_md_content.encode("utf-8"))}
+        ]
+        for _item in skill_files:
+            if not isinstance(_item, dict):
+                continue
+            _path = str(_item.get("path") or "").strip().lstrip("/").replace("\\", "/")
+            _content = str(_item.get("content") or "")
+            if _path and _path != "SKILL.md":
+                explorer_files.append({"path": _path, "content": _content, "size": len(_content.encode("utf-8"))})
         return {
             "slug": public_slug,
             "name": payload.get("name") or public_slug,
             "owner": canonical_owner,
             "ownerLabel": payload.get("owner") or canonical_owner,
             "description": payload.get("description") or "",
-            "skillMd": payload.get("skillMd") or payload.get("content") or "",
+            "skillMd": skill_md_content,
             "contentSha": payload.get("contentSha"),
             "updatedAt": payload.get("updatedAt"),
             "source": source_url,
+            "skillTree": skill_tree,
+            "skillFiles": explorer_files,
             "registryInstallApi": REGISTRY_INSTALL_URL.format(slug=quote(registry_slug, safe="")),
             "qualityDetails": self._fetch_quality_details(quality_url),
             "securityDetails": self._fetch_security_details(security_url),
@@ -620,19 +693,44 @@ class Skills(ApiHandler):
         return ""
 
     def _fetch_quality_details(self, url: str) -> dict:
+        # TODO: KBR needs to checked if necessary, because we can open the webpage for getting the data
         lines = self._fetch_registry_page_lines(url)
         if not lines:
             return {"url": url}
+        
+        s = self._collect_lines_between(lines, "Quality score", ["Score Breakdown", "Structural Checks"], limit=4)
+        #summary = "".join([s[2], s[3]]) + f" ({s[0]})"
+        summary = {"Summary":
+            {"rating": s[0],
+             "score": "".join(s[2:4]),
+             "date": s[1] if len(s) > 1 else None}
+            }
+        
+        bd = self._collect_lines_between(lines, "Score Breakdown", ["Structural Checks", "Design Pattern"], limit=16)
+        breakdown = result = {
+                        bd[i]: {
+                            "rating": bd[i+1],
+                            "score": bd[i+2],
+                            "description": bd[i+3]
+                        }
+                        for i in range(0, len(bd), 4)
+                    }
+            
+        
+        checks = self._collect_lines_between(lines, "Structural Checks", ["Design Pattern", "Install /learn to browse and install skills", "Additional Links"], limit=16)
+        design_pattern = self._collect_lines_between(lines, "Design Pattern", ["Install /learn to browse and install skills", "Additional Links"], limit=8)
+        
         return {
             "url": url,
-            "scoreLine": self._line_before_marker(lines, "Quality score", r"\b\d{1,3}/100\b"),
-            "summary": self._collect_lines_between(lines, "Quality score", ["Score Breakdown", "Structural Checks"], limit=4),
-            "breakdown": self._collect_lines_between(lines, "Score Breakdown", ["Structural Checks", "Design Pattern"], limit=12),
-            "checks": self._collect_lines_between(lines, "Structural Checks", ["Design Pattern", "Additional Links"], limit=16),
-            "designPattern": self._collect_lines_between(lines, "Design Pattern", ["Install /learn to browse and install skills", "Additional Links"], limit=8),
+            #"scoreLine": self._line_before_marker(lines, "Quality score", r"\b\d{1,3}/100\b"),
+            "summary": summary,
+            "breakdown": breakdown,
+            #"checks": checks,
+            #"designPattern": design_pattern,
         }
 
     def _fetch_security_details(self, url: str) -> dict:
+        # TODO: KBR needs to checked if necessary, because we can open the webpage for getting the data
         lines = self._fetch_registry_page_lines(url)
         if not lines:
             return {"url": url}

@@ -92,6 +92,11 @@ const model = {
   registryMeta: null,
   registryIncludeAllVersions: false,
   registrySearchTimer: null,
+  browseFilter: "all",
+  browseSortBy: "date",
+  browseRecentDays: 1,
+  applyStatusOpen: false,
+  installedFilter: "all",
   recentRegistryLoading: false,
   recentRegistryError: "",
   recentRegistryServers: [],
@@ -99,12 +104,15 @@ const model = {
   registryDetailLoading: false,
   registryDetailError: "",
   registryDetail: null,
+  registryDetailVersions: [],
   serverLog: "",
   serverDetail: null,
   serverDetailError: "",
   installDialogOpen: false,
   installDialogLoading: false,
   installDialogError: "",
+  installWarning: "",
+  installConfigureTarget: "",
   installDetail: null,
   installOptions: [],
   installOptionKey: "",
@@ -204,7 +212,7 @@ const model = {
         total_tool_count: status.total_tool_count ?? status.tool_count ?? 0,
         connected,
         error,
-        health: disabled ? "disabled" : (connected ? "connected" : (error ? "error" : "idle")),
+        health: disabled ? "disabled" : (error ? "error" : (connected ? "connected" : "idle")),
         has_log: Boolean(status.has_log),
         registry_name: config.registry_name || "",
         registry_version: config.registry_version || "",
@@ -270,6 +278,7 @@ const model = {
   async applyNow() {
     if (this.loading) return;
     this.loading = true;
+    this.applyStatusOpen = true;
     try {
       const resp = await API.callJsonApi("mcp_servers_apply", {
         mcp_servers: this.getEditorValue(),
@@ -307,6 +316,12 @@ const model = {
 
   async removeServer(serverName) {
     this.deleteServer(serverName);
+    await this.applyNow();
+  },
+
+  async uninstallRegistryServer(configServerName) {
+    this.closeRegistryDetail();
+    this.deleteServer(configServerName);
     await this.applyNow();
   },
 
@@ -436,6 +451,137 @@ const model = {
       this.serverDetailError = resp.error || "Failed to load MCP tool details.";
     }
     openModal("settings/mcp/client/mcp-server-tools.html");
+  },
+
+  setBrowseFilter(key) {
+    this.browseFilter = key || "all";
+  },
+
+  setInstalledFilter(key) {
+    this.installedFilter = key || "all";
+  },
+
+  get installedFilters() {
+    const servers = this.installedServers;
+    const filters = [{ key: "all", label: "All", count: servers.length }];
+    const connectedCount = servers.filter((s) => s.health === "connected").length;
+    if (connectedCount) filters.push({ key: "connected", label: "Connected", count: connectedCount });
+    const disabledCount = servers.filter((s) => s.disabled).length;
+    if (disabledCount) filters.push({ key: "disabled", label: "Disabled", count: disabledCount });
+    const errorCount = servers.filter((s) => s.health === "error").length;
+    if (errorCount) filters.push({ key: "error", label: "Error", count: errorCount });
+    const registryCount = servers.filter((s) => s.registry_name).length;
+    if (registryCount) filters.push({ key: "registry", label: "Registry", count: registryCount });
+    return filters;
+  },
+
+  get filteredInstalledServers() {
+    const servers = this.installedServers;
+    if (this.installedFilter === "connected") return servers.filter((s) => s.health === "connected");
+    if (this.installedFilter === "disabled") return servers.filter((s) => s.disabled);
+    if (this.installedFilter === "error") return servers.filter((s) => s.health === "error");
+    if (this.installedFilter === "registry") return servers.filter((s) => s.registry_name);
+    return servers;
+  },
+
+  get installedUpdateCount() {
+    const source = this.recentRegistryServers.length ? this.recentRegistryServers : this.registryServers;
+    if (!source.length) return 0;
+    const cards = this.buildRegistryCards(source);
+    return cards.filter((c) => this.hasInstalledUpdate(c.name, c.versions[0]?.version || "latest")).length;
+  },
+
+  get browseFilters() {
+    const source = this.registryQuery.trim() ? this.registryServers : this.recentRegistryServers;
+    const cards = this.buildRegistryCards(source);
+    const filters = [{ key: "all", label: "All", count: cards.length }];
+    const installedCount = this.installedServers.filter((s) => s.registry_name).length;
+    if (installedCount) filters.push({ key: "installed", label: "Installed", count: installedCount });
+    const updateCount = cards.filter((c) =>
+      this.hasInstalledUpdate(c.name, c.versions[0]?.version || "latest")
+    ).length;
+    if (updateCount) filters.push({ key: "update", label: "Update", count: updateCount });
+    const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - this.browseRecentDays); cutoff.setHours(0, 0, 0, 0);
+    const recentCount = cards.filter((c) => {
+      const t = Date.parse(c.versions?.[0]?.updatedAt || "");
+      return !Number.isNaN(t) && t >= cutoff.getTime();
+    }).length;
+    if (recentCount) filters.push({ key: "recent", label: "Recently Updated", count: recentCount });
+    const remoteCount = cards.filter((c) => c.hasRemote).length;
+    if (remoteCount) filters.push({ key: "remote", label: "Remote", count: remoteCount });
+    const packageCount = cards.filter((c) => c.hasPackage).length;
+    if (packageCount) filters.push({ key: "package", label: "Package", count: packageCount });
+    return filters;
+  },
+
+  get browseResultsSummary() {
+    const source = this.registryQuery.trim() ? this.registryServers : this.recentRegistryServers;
+    const total = this.buildRegistryCards(source).length;
+    const visible = this.filteredRegistryCards().length;
+    if (!total) return "";
+    if (visible === total) return `${total} MCP server${total === 1 ? "" : "s"}`;
+    return `${visible} of ${total} servers`;
+  },
+
+  filteredRegistryCards() {
+    const source = this.registryQuery.trim() ? this.registryServers : this.recentRegistryServers;
+    let cards = this.buildRegistryCards(source);
+    if (this.browseFilter === "installed") {
+      // Build from both sources to catch installed servers not in recent list
+      const combinedSource = [...this.recentRegistryServers];
+      const recentNames = new Set(this.recentRegistryServers.map((s) => s.name));
+      for (const s of this.registryServers) {
+        if (!recentNames.has(s.name)) combinedSource.push(s);
+      }
+      const allCards = this.buildRegistryCards(combinedSource);
+      cards = allCards.filter((c) =>
+        c.versions.some((v) => this.installedRegistryVersion(c.name, v.version || "latest"))
+      );
+      // Synthetic cards for installed servers not found in any registry source
+      const foundNames = new Set(cards.map((c) => c.name));
+      for (const srv of this.installedServers) {
+        if (srv.registry_name && !foundNames.has(srv.registry_name)) {
+          cards.push({
+            key: srv.registry_name, name: srv.registry_name,
+            title: srv.name || srv.registry_name,
+            description: "Installed",
+            repository: {}, websiteUrl: "", status: "",
+            versions: [{ version: srv.registry_version || "latest", isLatest: true }],
+            hasRemote: false, hasPackage: false,
+          });
+          foundNames.add(srv.registry_name);
+        }
+      }
+    } else if (this.browseFilter === "update") {
+      cards = cards.filter((c) => this.hasInstalledUpdate(c.name, c.versions[0]?.version || "latest"));
+    } else if (this.browseFilter === "recent") {
+      const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - this.browseRecentDays); cutoff.setHours(0, 0, 0, 0);
+      cards = cards.filter((c) => {
+        const t = Date.parse(c.versions?.[0]?.updatedAt || "");
+        return !Number.isNaN(t) && t >= cutoff.getTime();
+      });
+    } else if (this.browseFilter === "remote") {
+      cards = cards.filter((c) => c.hasRemote);
+    } else if (this.browseFilter === "package") {
+      cards = cards.filter((c) => c.hasPackage);
+    }
+    if (this.browseSortBy === "date") {
+      return [...cards].sort((l, r) => {
+        const lt = Date.parse(l.versions?.[0]?.updatedAt || "") || 0;
+        const rt = Date.parse(r.versions?.[0]?.updatedAt || "") || 0;
+        return rt - lt;
+      });
+    }
+    return cards;
+  },
+
+  closeApplyStatus() {
+    this.applyStatusOpen = false;
+  },
+
+  truncateDescription(text, max = 110) {
+    const str = String(text || "No description provided.");
+    return str.length > max ? str.slice(0, max).trimEnd() + "…" : str;
   },
 
   scheduleRegistrySearch() {
@@ -595,12 +741,13 @@ const model = {
     return `Update ${count} installed`;
   },
 
-  async openRegistryDetail(serverName, version = "latest") {
+  async openRegistryDetail(serverName, version = "latest", versions = []) {
     try {
       this.registryDetailOpen = true;
       this.registryDetailLoading = true;
       this.registryDetailError = "";
       this.registryDetail = null;
+      this.registryDetailVersions = Array.isArray(versions) ? versions : [];
 
       const resp = await API.callJsonApi("mcp_registry", {
         action: "detail",
@@ -654,6 +801,23 @@ const model = {
     this.registryDetailLoading = false;
     this.registryDetailError = "";
     this.registryDetail = null;
+    this.registryDetailVersions = [];
+  },
+
+  formatFullDate(value) {
+    if (!value || typeof value !== "string") return "";
+    const trimmed = value.trim();
+    const hasZone = /([zZ]|[+-]\d{2}:?\d{2})$/.test(trimmed);
+    let normalized = /t/i.test(trimmed) ? trimmed : trimmed.replace(" ", "T");
+    if (!hasZone && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d+)?$/.test(normalized)) {
+      normalized = `${normalized}Z`;
+    }
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat(undefined, {
+      year: "numeric", month: "2-digit", day: "2-digit",
+      hour: "2-digit", minute: "2-digit",
+    }).format(date);
   },
 
   registryDetailJson() {
@@ -688,6 +852,53 @@ const model = {
       index += 1;
     }
     return `${baseName}-${index}`;
+  },
+
+  async tryDirectInstall(serverName, version = "latest") {
+    let detail = null;
+    try {
+      this.registryDetailLoading = true;
+      const resp = await API.callJsonApi("mcp_registry", {
+        action: "detail",
+        server_name: serverName,
+        version,
+      });
+      if (!resp.ok) throw new Error(resp.error || "Failed to load MCP registry server");
+      detail = resp.data || {};
+    } catch (error) {
+      this.registryDetailLoading = false;
+      await this.openInstallDialog(serverName, version);
+      return;
+    } finally {
+      this.registryDetailLoading = false;
+    }
+
+    const options = this.buildInstallOptions(detail);
+    const option = options.find((o) => o.supported);
+    if (!option) {
+      await this.openInstallDialog(serverName, version);
+      return;
+    }
+
+    this.installInputValues = this.initialInstallValues(option);
+    const errors = this.validateInstallInputs(option);
+    if (errors.length || option.inputs.length > 0) {
+      await this.openInstallDialog(serverName, version);
+      return;
+    }
+
+    // No inputs at all — install directly and show Apply Status
+    this.closeRegistryDetail();
+    try {
+      const serverName_ = this.nextAvailableServerName(configName(detail.name));
+      const config = option.kind === "remote"
+        ? this.buildRemoteConfig(detail, option)
+        : this.buildPackageConfig(detail, option);
+      this.upsertServerConfig(serverName_, config);
+      await this.applyNow();
+    } catch (error) {
+      console.error("Direct install failed:", error);
+    }
   },
 
   async openInstallDialog(serverName, version = "latest") {
@@ -728,10 +939,57 @@ const model = {
     this.installDialogOpen = false;
     this.installDialogLoading = false;
     this.installDialogError = "";
+    this.installWarning = "";
+    this.installConfigureTarget = "";
     this.installDetail = null;
     this.installOptions = [];
     this.installOptionKey = "";
     this.installInputValues = {};
+  },
+
+  registryDetailHasInputs() {
+    if (!this.registryDetail) return false;
+    return this.buildInstallOptions(this.registryDetail).some((o) => o.inputs.length > 0);
+  },
+
+  async openConfigureDialog(serverName, version = "latest") {
+    const installed = this.installedRegistryVersion(serverName, version) || this.installedRegistryServer(serverName);
+    if (!installed) {
+      await this.openInstallDialog(serverName, version);
+      return;
+    }
+    try {
+      this.closeRegistryDetail();
+      this.installDialogOpen = true;
+      this.installDialogLoading = true;
+      this.installDialogError = "";
+      this.installWarning = "";
+      this.installConfigureTarget = installed.name;
+      this.installDetail = null;
+      this.installOptions = [];
+      this.installOptionKey = "";
+      this.installInputValues = {};
+
+      const resp = await API.callJsonApi("mcp_registry", {
+        action: "detail",
+        server_name: serverName,
+        version,
+      });
+      if (!resp.ok) throw new Error(resp.error || "Failed to load MCP registry server");
+
+      const detail = resp.data || {};
+      const options = this.buildInstallOptions(detail);
+      const savedKey = installed.config.registry_option_key || "";
+      const option = options.find((o) => o.key === savedKey) || options.find((o) => o.supported) || options[0];
+      this.installDetail = detail;
+      this.installOptions = options;
+      this.installOptionKey = option?.key || "";
+      this.installInputValues = deepClone(installed.config.registry_install_inputs || this.initialInstallValues(option));
+    } catch (error) {
+      this.installDialogError = error?.message || "Failed to load MCP registry server";
+    } finally {
+      this.installDialogLoading = false;
+    }
   },
 
   selectedInstallOption() {
@@ -1010,10 +1268,25 @@ const model = {
 
     try {
       this.installDialogError = "";
-      const serverName = this.nextAvailableServerName(configName(this.installDetail.name));
+      // Warn if optional inputs are empty (server may not work correctly)
+      const emptyOptional = (option.inputs || []).filter((i) => !i.required && !this.resolveInputValue(i));
+      this.installWarning = emptyOptional.length
+        ? `${emptyOptional.length} optional field${emptyOptional.length > 1 ? "s" : ""} not set: ${emptyOptional.map((i) => i.label).join(", ")}. The server may not work correctly.`
+        : "";
+      const serverName = this.installConfigureTarget
+        ? this.installConfigureTarget
+        : this.nextAvailableServerName(configName(this.installDetail.name));
       const config = option.kind === "remote"
         ? this.buildRemoteConfig(this.installDetail, option)
         : this.buildPackageConfig(this.installDetail, option);
+      // Preserve disabled state and disabled_tools when reconfiguring
+      if (this.installConfigureTarget) {
+        const existing = this.findInstalledServer(this.installConfigureTarget);
+        if (existing?.config.disabled) config.disabled = true;
+        if (Array.isArray(existing?.config.disabled_tools) && existing.config.disabled_tools.length) {
+          config.disabled_tools = deepClone(existing.config.disabled_tools);
+        }
+      }
       this.upsertServerConfig(serverName, config);
       await this.applyNow();
       this.closeInstallDialog();

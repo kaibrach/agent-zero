@@ -54,12 +54,42 @@
                                         <span class="material-symbols-outlined">verified</span>
                                         <span x-text="$store.skillsStore.ratingLabel($store.skillsStore.selectedSkill.score)"></span>
                                     </span>
+                                    <template x-if="$store.skillsStore.selectedSkill.contentQualityScore != null">
+                                        <a class="pi-score-tag"
+                                           :class="`pi-score-${$store.skillsStore.scoreTone($store.skillsStore.selectedSkill.contentQualityScore, 'quality')}`"
+                                           :href="$store.skillsStore.selectedSkill.qualityDetails?.url || ($store.skillsStore.selectedSkill.source ? $store.skillsStore.selectedSkill.source + '/quality' : '#')"
+                                           target="_blank" rel="noopener noreferrer" title="Quality report">
+                                            <span class="material-symbols-outlined">analytics</span>
+                                            <span>Q·<strong x-text="$store.skillsStore.selectedSkill.contentQualityScore"></strong></span>
+                                        </a>
+                                    </template>
+                                    <template x-if="$store.skillsStore.selectedSkill.securityScore != null">
+                                        <a class="pi-score-tag"
+                                           :class="`pi-score-${$store.skillsStore.scoreTone($store.skillsStore.selectedSkill.securityScore, 'security')}`"
+                                           :href="$store.skillsStore.selectedSkill.securityDetails?.url || ($store.skillsStore.selectedSkill.source ? $store.skillsStore.selectedSkill.source + '/security' : '#')"
+                                           target="_blank" rel="noopener noreferrer" title="Security report">
+                                            <span class="material-symbols-outlined">shield</span>
+                                            <span>S·<strong x-text="$store.skillsStore.selectedSkill.securityScore"></strong></span>
+                                        </a>
+                                    </template>
                                 </div>
                                 <div class="pi-hero-tags" x-show="$store.skillsStore.selectedSkill.tags?.length">
                                     <template x-for="tag in $store.skillsStore.selectedSkill.tags || []" :key="tag">
                                         <span class="pi-tag" x-text="tag"></span>
                                     </template>
                                 </div>
+                                <div class="pi-hero-updated" x-show="$store.skillsStore.selectedSkill.updatedAt">
+                                    <span class="material-symbols-outlined">schedule</span>
+                                    <span x-text="$store.skillsStore.formatDateShort($store.skillsStore.selectedSkill.updatedAt)"></span>
+                                    <span class="pi-hero-updated-rel" x-text="'(' + $store.skillsStore.formatRelativeDate($store.skillsStore.selectedSkill.updatedAt) + ')'"></span>
+                                </div>
+                            </div>
+                            <div class="pi-hero-refs" x-show="($store.skillsStore.selectedSkill.sourceReferences || []).length">
+                                <template x-for="ref in ($store.skillsStore.selectedSkill.sourceReferences || [])" :key="ref.label">
+                                    <a :href="ref.url" target="_blank" rel="noopener noreferrer" class="pi-ref-btn" :title="ref.label">
+                                        <span class="material-symbols-outlined" x-text="ref.kind === 'api' ? 'api' : ref.kind === 'quality' ? 'analytics' : ref.kind === 'security' ? 'shield' : 'open_in_new'"></span>
+                                    </a>
+                                </template>
                             </div>
                         </div>
                     </div>
@@ -115,116 +145,152 @@
                     </button>
                 </div>
 
-                <div class="pi-version-section">
-                    <div class="pi-version-header">Registry</div>
-                    <div class="pi-registry-grid">
-                        <div class="pi-registry-card pi-registry-card-updated">
-                            <div class="pi-registry-label">Updated</div>
-                            <div class="pi-registry-value" x-text="$store.skillsStore.formatRelativeDate($store.skillsStore.selectedSkill.updatedAt)"></div>
-                            <div class="pi-registry-copy" x-text="$store.skillsStore.selectedSkill.updatedAt || 'Timestamp unavailable'"></div>
-                        </div>
-
-                        <div class="pi-registry-card" :class="`pi-registry-card-${$store.skillsStore.scoreTone($store.skillsStore.selectedSkill.contentQualityScore, 'quality')}`">
-                            <div class="pi-registry-label">Quality</div>
-                            <div class="pi-registry-value" x-text="$store.skillsStore.selectedSkill.contentQualityScore ?? 'n/a'"></div>
-                            <div class="pi-registry-copy" x-text="$store.skillsStore.qualityScoreDescription($store.skillsStore.selectedSkill.contentQualityScore)"></div>
-                        </div>
-
-                        <div class="pi-registry-card" :class="`pi-registry-card-${$store.skillsStore.scoreTone($store.skillsStore.selectedSkill.securityScore, 'security')}`">
-                            <div class="pi-registry-label">Security</div>
-                            <div class="pi-registry-value" x-text="$store.skillsStore.selectedSkill.securityScore ?? 'n/a'"></div>
-                            <div class="pi-registry-copy" x-text="$store.skillsStore.securityScoreDescription($store.skillsStore.selectedSkill.securityScore)"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="pi-developer-section">
-                    <div class="pi-developer-header">Source References</div>
-                    <div class="pi-developer-links">
-                        <template x-for="reference in ($store.skillsStore.selectedSkill.sourceReferences || [])" :key="reference.label + reference.url">
-                            <a :href="reference.url" target="_blank" rel="noopener noreferrer" class="pi-dev-link">
-                                <span class="material-symbols-outlined" x-text="reference.kind === 'api' ? 'api' : reference.kind === 'quality' ? 'analytics' : reference.kind === 'security' ? 'shield' : 'open_in_new'"></span>
-                                <span x-text="reference.label"></span>
-                            </a>
+                <template x-if="$store.skillsStore.detailLoading || $store.skillsStore.skillTreeFiles?.length">
+                    <div class="pi-version-section">
+                        <div class="pi-version-header">Source Files</div>
+                        <div x-show="$store.skillsStore.detailLoading && !$store.skillsStore.skillTreeFiles?.length" class="pi-loading-text">Loading...</div>
+                        <template x-if="$store.skillsStore.skillTreeFiles?.length">
+                            <div class="pi-source-explorer">
+                                <div class="pi-file-tree">
+                                    <template x-for="item in $store.skillsStore.buildSkillFileTree()" :key="item.path">
+                                        <div class="pi-tree-item"
+                                             :class="{ 'pi-tree-file': item.type === 'file', 'pi-tree-dir': item.type === 'dir', 'pi-tree-active': item.type === 'file' && $store.skillsStore.activeSkillFile?.path === item.path }"
+                                             :style="`padding-left: calc(0.6rem + ${item.depth} * 1rem)`"
+                                             @click="item.type === 'file' && $store.skillsStore.selectSkillFile(item.path)">
+                                            <span class="material-symbols-outlined pi-tree-icon"
+                                                  x-text="item.type === 'dir' ? 'folder' : $store.skillsStore.fileTreeIcon(item.path)"></span>
+                                            <span class="pi-tree-name" x-text="item.name"></span>
+                                            <span class="pi-tree-size" x-show="item.type === 'file'" x-text="$store.skillsStore.formatFileSize(item.size)"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                                <div class="pi-file-viewer">
+                                    <template x-if="$store.skillsStore.activeSkillFile">
+                                        <div class="pi-file-viewer-inner">
+                                            <div class="pi-file-viewer-header">
+                                                <span class="material-symbols-outlined" x-text="$store.skillsStore.fileTreeIcon($store.skillsStore.activeSkillFile.path)"></span>
+                                                <span x-text="$store.skillsStore.activeSkillFile.path"></span>
+                                                <span class="pi-file-viewer-size" x-text="$store.skillsStore.formatFileSize($store.skillsStore.activeSkillFile.size)"></span>
+                                            </div>
+                                            <template x-if="$store.skillsStore.activeSkillFile.path.endsWith('.md')">
+                                                <div class="pi-readme-content" x-html="$store.skillsStore.renderSkillFileHtml($store.skillsStore.activeSkillFile)"></div>
+                                            </template>
+                                            <template x-if="!$store.skillsStore.activeSkillFile.path.endsWith('.md')">
+                                                <pre class="pi-file-code" x-text="$store.skillsStore.activeSkillFile.content || ''"></pre>
+                                            </template>
+                                        </div>
+                                    </template>
+                                    <div x-show="!$store.skillsStore.activeSkillFile" class="pi-file-viewer-empty">Select a file to view its contents</div>
+                                </div>
+                            </div>
                         </template>
                     </div>
-                </div>
+                </template>
 
-                <div class="pi-readme-section" x-show="$store.skillsStore.detailLoading || $store.skillsStore.detailError || $store.skillsStore.detailHtml">
-                    <div class="pi-readme-header">SKILL.md</div>
-                    <div x-show="$store.skillsStore.detailLoading" class="pi-loading-text">Loading skill details...</div>
-                    <div x-show="$store.skillsStore.detailError && !$store.skillsStore.detailLoading" class="pi-loading-text" x-text="$store.skillsStore.detailError"></div>
-                    <div x-show="$store.skillsStore.detailHtml && !$store.skillsStore.detailLoading" class="pi-readme-content" x-html="$store.skillsStore.detailHtml"></div>
-                </div>
+
+                <div x-show="$store.skillsStore.detailError && !$store.skillsStore.detailLoading" class="pi-loading-text" x-text="$store.skillsStore.detailError"></div>
 
                 <div class="skill-install-mask"
                     x-show="$store.skillsStore.installDialogOpen"
                     x-transition.opacity
                     style="display:none;"
                     @click.self="$store.skillsStore.closeInstallDialog()">
-                    <div class="skill-install-panel">
-                        <div class="skill-install-panel-header">
-                            <div>
-                                <div class="pi-readme-header">Install Skill</div>
-                                <div class="pi-loading-text" x-text="$store.skillsStore.installSkill ? `${$store.skillsStore.installSkill.owner}/${$store.skillsStore.installSkill.slug}` : 'Configure install target'"></div>
+                    <div class="skill-install-panel" @click.stop>
+
+                        <!-- Panel header -->
+                        <div class="sip-header">
+                            <div class="sip-skill-identity">
+                                <div class="sip-skill-thumb">
+                                    <template x-if="$store.skillsStore.getThumbnailUrl($store.skillsStore.installSkill)">
+                                        <img :src="$store.skillsStore.getThumbnailUrl($store.skillsStore.installSkill)" alt="">
+                                    </template>
+                                    <template x-if="!$store.skillsStore.getThumbnailUrl($store.skillsStore.installSkill)">
+                                        <span class="material-symbols-outlined">psychology_alt</span>
+                                    </template>
+                                </div>
+                                <div class="sip-skill-text">
+                                    <div class="sip-skill-name" x-text="$store.skillsStore.installSkill?.title || $store.skillsStore.installSkill?.name || $store.skillsStore.installSkill?.slug"></div>
+                                    <div class="sip-skill-slug" x-text="$store.skillsStore.installSkill ? `${$store.skillsStore.installSkill.owner}/${$store.skillsStore.installSkill.slug}` : ''"></div>
+                                </div>
                             </div>
-                            <button type="button" class="button icon-button" @click="$store.skillsStore.closeInstallDialog()">
-                                <span class="icon material-symbols-outlined">close</span>
+                            <button type="button" class="sip-close-btn" @click="$store.skillsStore.closeInstallDialog()" title="Close">
+                                <span class="material-symbols-outlined">close</span>
                             </button>
                         </div>
 
-                        <div class="detail-card install-preview" x-show="$store.skillsStore.installSkill">
-                            <div class="detail-card-title" x-text="$store.skillsStore.installSkill?.title || $store.skillsStore.installSkill?.name || $store.skillsStore.installSkill?.slug"></div>
-                            <div class="pi-loading-text" x-text="$store.skillsStore.installSkill?.description || 'No description provided.'"></div>
-                            <div class="detail-card-note">Destination: <strong x-text="$store.skillsStore.installDestinationPreview()"></strong></div>
-                        </div>
+                        <!-- Description -->
+                        <div class="sip-description" x-show="$store.skillsStore.installSkill?.description" x-text="$store.skillsStore.installSkill?.description || ''"></div>
 
-                        <div class="install-form-grid">
-                            <label class="policy-label">
-                                <span class="policy-label-text">Project</span>
-                                <select x-model="$store.skillsStore.installProjectName" class="policy-dropdown">
-                                    <option value="">All</option>
+                        <div class="sip-divider"></div>
+
+                        <!-- Scope selectors -->
+                        <div class="sip-scope-row">
+                            <label class="sip-field">
+                                <span class="sip-field-label">
+                                    <span class="material-symbols-outlined">folder_special</span>
+                                    Project
+                                </span>
+                                <select x-model="$store.skillsStore.installProjectName" class="sip-select">
+                                    <option value="">Global</option>
                                     <template x-for="project in $store.skillsStore.projects" :key="project.key">
                                         <option :value="project.key" x-text="project.label"></option>
                                     </template>
                                 </select>
                             </label>
 
-                            <label class="policy-label">
-                                <span class="policy-label-text">Agent profile</span>
-                                <select x-model="$store.skillsStore.installAgentProfileKey" class="policy-dropdown">
-                                    <option value="">All</option>
+                            <label class="sip-field">
+                                <span class="sip-field-label">
+                                    <span class="material-symbols-outlined">manage_accounts</span>
+                                    Agent profile
+                                </span>
+                                <select x-model="$store.skillsStore.installAgentProfileKey" class="sip-select">
+                                    <option value="">All profiles</option>
                                     <template x-for="agentProfile in $store.skillsStore.agentProfiles" :key="agentProfile.key">
                                         <option :value="agentProfile.key" x-text="agentProfile.label"></option>
                                     </template>
                                 </select>
                             </label>
-
-                            <label class="policy-label">
-                                <span class="policy-label-text">Namespace</span>
-                                <input class="text-input" type="text" placeholder="authors or team" x-model="$store.skillsStore.installNamespace">
-                            </label>
-
-                            <label class="policy-label">
-                                <span class="policy-label-text">Conflict policy</span>
-                                <select x-model="$store.skillsStore.installConflict" class="policy-dropdown">
-                                    <option value="skip">Skip existing</option>
-                                    <option value="rename">Rename existing</option>
-                                    <option value="overwrite">Overwrite existing</option>
-                                </select>
-                            </label>
                         </div>
 
-                        <div x-show="$store.skillsStore.installError" class="pi-loading-text" x-text="$store.skillsStore.installError"></div>
+                        <!-- Conflict policy as segmented control -->
+                        <div class="sip-conflict-row">
+                            <span class="sip-field-label">
+                                <span class="material-symbols-outlined">compare_arrows</span>
+                                If already installed
+                            </span>
+                            <div class="sip-conflict-pills">
+                                <button type="button" class="sip-pill" :class="{ 'sip-pill-active': $store.skillsStore.installConflict === 'skip' }" @click="$store.skillsStore.installConflict = 'skip'">Skip</button>
+                                <button type="button" class="sip-pill" :class="{ 'sip-pill-active': $store.skillsStore.installConflict === 'rename' }" @click="$store.skillsStore.installConflict = 'rename'">Rename</button>
+                                <button type="button" class="sip-pill" :class="{ 'sip-pill-active sip-pill-danger': $store.skillsStore.installConflict === 'overwrite' }" @click="$store.skillsStore.installConflict = 'overwrite'">Overwrite</button>
+                            </div>
+                        </div>
 
-                        <div class="skill-actions-row detail-actions-row">
-                            <button type="button" class="button" @click="$store.skillsStore.closeInstallDialog()">Cancel</button>
-                            <button type="button" class="button"
+                        <!-- Live path preview -->
+                        <div class="sip-path-preview" x-show="$store.skillsStore.installSkill">
+                            <span class="material-symbols-outlined">terminal</span>
+                            <span class="sip-path-text" x-text="'skills / ' + $store.skillsStore.installDestinationPreview()"></span>
+                        </div>
+
+                        <!-- Error -->
+                        <div class="sip-error" x-show="$store.skillsStore.installError" x-text="$store.skillsStore.installError"></div>
+
+                        <!-- Actions -->
+                        <div class="sip-actions">
+                            <button type="button" class="sip-btn-cancel" @click="$store.skillsStore.closeInstallDialog()">Cancel</button>
+                            <button type="button" class="sip-btn-install"
                                 @click="$store.skillsStore.installRegistrySkill($store.skillsStore.installSkill)"
-                                :disabled="!$store.skillsStore.installSkill || $store.skillsStore.busyKey === `install:${$store.skillsStore.installSkill.key}`">
-                                <span x-text="$store.skillsStore.busyKey === `install:${$store.skillsStore.installSkill.key}` ? 'Installing...' : 'Install Skill'"></span>
+                                :disabled="!$store.skillsStore.installSkill || $store.skillsStore.busyKey === `install:${$store.skillsStore.installSkill?.key || ''}`">
+                                <span x-show="$store.skillsStore.busyKey === `install:${$store.skillsStore.installSkill?.key || ''}`" class="sip-btn-spinner">
+                                    <span class="spinner"></span>
+                                    Installing…
+                                </span>
+                                <span x-show="$store.skillsStore.busyKey !== `install:${$store.skillsStore.installSkill?.key || ''}`">
+                                    <span class="material-symbols-outlined">download</span>
+                                    Install Skill
+                                </span>
                             </button>
                         </div>
+
                     </div>
                 </div>
             </div>
@@ -287,9 +353,11 @@
 
         .pi-hero-title-row {
             display: grid;
-            grid-template-columns: 1fr;
+            grid-template-columns: 1fr auto;
+            column-gap: 0.75rem;
             row-gap: 0.5rem;
             margin-bottom: 0.5rem;
+            align-items: start;
         }
 
         .pi-status-badges,
@@ -544,6 +612,20 @@
             background: linear-gradient(180deg, rgba(148, 163, 184, 0.1), rgba(15, 23, 42, 0.1));
         }
 
+        .skill-source-tree {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.8rem;
+            line-height: 1.5;
+            color: var(--color-text-secondary);
+            background: var(--color-bg-secondary, rgba(0, 0, 0, 0.15));
+            border: 1px solid var(--color-border, rgba(255,255,255,0.08));
+            border-radius: 6px;
+            padding: 0.6rem 0.8rem;
+            margin-top: 0.4rem;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
         .pi-registry-card-strong {
             border-color: rgba(34, 197, 94, 0.32);
             background: rgba(34, 197, 94, 0.08);
@@ -564,16 +646,175 @@
             background: rgba(248, 113, 113, 0.08);
         }
 
-        .pi-dev-link {
+        /* Updated line below tags */
+        .pi-hero-updated {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            margin-top: 0.45rem;
+            font-size: 0.82rem;
+            color: var(--color-text-muted);
+        }
+
+        .pi-hero-updated .material-symbols-outlined { font-size: 0.9rem; }
+
+        .pi-hero-updated-rel {
+            font-size: 0.78rem;
+            opacity: 0.7;
+        }
+        .pi-hero-refs {
+            display: flex;
+            gap: 0.3rem;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .pi-ref-btn {
             display: inline-flex;
             align-items: center;
-            gap: 0.45rem;
-            padding: 0.65rem 0.8rem;
-            border-radius: 8px;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border-radius: 6px;
             border: 1px solid var(--color-border);
-            text-decoration: none;
-            color: var(--color-text-primary);
             background: var(--color-panel);
+            color: var(--color-text-muted);
+            text-decoration: none;
+            flex-shrink: 0;
+            transition: color 0.15s, background 0.15s;
+        }
+
+        .pi-ref-btn:hover {
+            color: var(--color-text-primary);
+            background: rgba(255, 255, 255, 0.07);
+        }
+
+        .pi-ref-btn .material-symbols-outlined { font-size: 1rem; }
+
+        /* Quality & Security score tags in hero meta */
+        .pi-score-tag {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.28rem;
+            padding: 0.18rem 0.45rem;
+            border-radius: 0.4rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: opacity 0.15s;
+            line-height: 1.4;
+        }
+
+        .pi-score-tag:hover { opacity: 0.75; }
+        .pi-score-tag .material-symbols-outlined { font-size: 0.88rem; }
+
+        .pi-score-strong { background: rgba(34, 197, 94, 0.14); color: #4ade80; border-color: rgba(34, 197, 94, 0.28); }
+        .pi-score-medium { background: rgba(59, 130, 246, 0.14); color: #60a5fa; border-color: rgba(59, 130, 246, 0.28); }
+        .pi-score-caution { background: rgba(245, 158, 11, 0.14); color: #fbbf24; border-color: rgba(245, 158, 11, 0.28); }
+        .pi-score-weak { background: rgba(248, 113, 113, 0.14); color: #f87171; border-color: rgba(248, 113, 113, 0.28); }
+
+        /* Interactive source file explorer */
+        .pi-source-explorer {
+            display: grid;
+            grid-template-columns: 220px 1fr;
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            overflow: hidden;
+            height: min(620px, 60vh);
+        }
+
+        .pi-file-tree {
+            overflow-y: auto;
+            border-right: 1px solid var(--color-border);
+            background: var(--color-panel);
+            padding: 0.3rem 0;
+        }
+
+        .pi-tree-item {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.3rem 0.6rem;
+            font-size: 0.81rem;
+            cursor: default;
+            user-select: none;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            transition: background 0.1s;
+        }
+
+        .pi-tree-file { cursor: pointer; }
+        .pi-tree-dir { color: var(--color-text-muted); font-weight: 600; }
+
+        .pi-tree-file:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--color-text-primary);
+        }
+
+        .pi-tree-active {
+            background: rgba(59, 130, 246, 0.15) !important;
+            color: #60a5fa !important;
+        }
+
+        .pi-tree-icon { font-size: 0.9rem; flex-shrink: 0; }
+        .pi-tree-name { flex: 1; overflow: hidden; text-overflow: ellipsis; }
+        .pi-tree-size {
+            font-size: 0.67rem;
+            color: var(--color-text-muted);
+            flex-shrink: 0;
+            padding-left: 0.3rem;
+        }
+
+        .pi-file-viewer {
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .pi-file-viewer-inner { padding: 0.75rem 1rem; min-height: 100%; }
+
+        .pi-file-viewer-header {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            font-size: 0.81rem;
+            font-family: var(--font-mono, monospace);
+            color: var(--color-text-secondary);
+            padding-bottom: 0.55rem;
+            margin-bottom: 0.55rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .pi-file-viewer-header .material-symbols-outlined { font-size: 0.9rem; }
+
+        .pi-file-viewer-size {
+            margin-left: auto;
+            font-size: 0.71rem;
+            color: var(--color-text-muted);
+            font-family: var(--font-mono, monospace);
+        }
+
+        .pi-file-viewer-empty {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--color-text-muted);
+            font-size: 0.85rem;
+            padding: 2rem;
+        }
+
+        .pi-file-code {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.78rem;
+            line-height: 1.6;
+            white-space: pre;
+            overflow-x: auto;
+            color: var(--color-text-secondary);
+            margin: 0;
         }
 
         .pi-readme-content {
@@ -671,35 +912,313 @@
             align-items: center;
             justify-content: center;
             padding: 1rem;
-            background: color-mix(in srgb, #08121d 68%, transparent);
-            backdrop-filter: blur(8px);
+            background: color-mix(in srgb, #08121d 72%, transparent);
+            backdrop-filter: blur(12px);
         }
 
+        /* Redesigned install panel */
         .skill-install-panel {
-            width: min(760px, 100%);
-            max-height: min(92vh, 980px);
-            overflow: auto;
-            gap: 0.9rem;
-        }
-
-        .policy-label {
+            width: min(520px, 100%);
+            max-height: min(90vh, 640px);
+            overflow-y: auto;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.10);
+            background: linear-gradient(160deg,
+                color-mix(in srgb, var(--color-panel) 92%, #3b82f6 8%) 0%,
+                var(--color-panel) 60%
+            );
+            box-shadow: 0 32px 80px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255,255,255,0.04) inset;
+            padding: 0;
             display: flex;
             flex-direction: column;
-            gap: 0.35rem;
+            gap: 0;
         }
 
-        .policy-dropdown,
-        .text-input {
+        .sip-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1.25rem 1.25rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .sip-skill-identity {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
+        }
+
+        .sip-skill-thumb {
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: radial-gradient(circle at top, rgba(107, 114, 128, 0.4), rgba(107, 114, 128, 0.1));
+            border: 1px solid rgba(255,255,255,0.10);
+            overflow: hidden;
+        }
+
+        .sip-skill-thumb img {
             width: 100%;
-            padding: 0.55rem 0.7rem;
-            border-radius: 6px;
-            border: 1px solid var(--color-border);
-            background: var(--color-background);
+            height: 100%;
+            object-fit: contain;
+            padding: 0.25rem;
+        }
+
+        .sip-skill-thumb .material-symbols-outlined {
+            font-size: 1.6rem;
+            color: var(--color-text-muted);
+        }
+
+        .sip-skill-text { min-width: 0; }
+
+        .sip-skill-name {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: var(--color-text-primary);
+            line-height: 1.2;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sip-skill-slug {
+            margin-top: 0.15rem;
+            font-family: var(--font-mono, monospace);
+            font-size: 0.75rem;
+            color: var(--color-text-muted);
+        }
+
+        .sip-close-btn {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sip-close-btn:hover {
+            background: rgba(255,255,255,0.07);
             color: var(--color-text-primary);
         }
 
-        .detail-actions-row {
+        .sip-close-btn .material-symbols-outlined { font-size: 1.1rem; }
+
+        .sip-description {
+            padding: 0.85rem 1.25rem 0;
+            font-size: 0.88rem;
+            line-height: 1.55;
+            color: var(--color-text-secondary);
+            display: -webkit-box;
+            -webkit-line-clamp: 3;
+            line-clamp: 3;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .sip-divider {
+            height: 1px;
+            background: rgba(255,255,255,0.07);
+            margin: 1rem 1.25rem 0;
+        }
+
+        .sip-scope-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.75rem;
+            padding: 1rem 1.25rem 0;
+        }
+
+        .sip-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .sip-field-label {
+            display: flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--color-text-muted);
+        }
+
+        .sip-field-label .material-symbols-outlined { font-size: 0.9rem; }
+
+        .sip-select {
+            padding: 0.55rem 0.75rem;
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.04);
+            color: var(--color-text-primary);
+            font-size: 0.88rem;
+            cursor: pointer;
+            transition: border-color 0.15s;
+        }
+
+        .sip-select:focus {
+            outline: none;
+            border-color: rgba(59, 130, 246, 0.5);
+        }
+
+        .sip-conflict-row {
+            padding: 1rem 1.25rem 0;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+        }
+
+        .sip-conflict-pills {
+            display: flex;
+            gap: 0;
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 8px;
+            overflow: hidden;
+            background: rgba(255,255,255,0.03);
+        }
+
+        .sip-pill {
+            flex: 1;
+            padding: 0.5rem 0.6rem;
+            font-size: 0.82rem;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            background: transparent;
+            color: var(--color-text-muted);
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+            border-right: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .sip-pill:last-child { border-right: none; }
+
+        .sip-pill:hover {
+            background: rgba(255,255,255,0.06);
+            color: var(--color-text-primary);
+        }
+
+        .sip-pill-active {
+            background: rgba(59, 130, 246, 0.18) !important;
+            color: #93c5fd !important;
+        }
+
+        .sip-pill-danger.sip-pill-active {
+            background: rgba(248, 113, 113, 0.18) !important;
+            color: #fca5a5 !important;
+        }
+
+        .sip-path-preview {
+            margin: 1rem 1.25rem 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 0.85rem;
+            border-radius: 8px;
+            background: rgba(0,0,0,0.25);
+            border: 1px solid rgba(255,255,255,0.07);
+        }
+
+        .sip-path-preview .material-symbols-outlined {
+            font-size: 0.95rem;
+            color: var(--color-text-muted);
+            flex-shrink: 0;
+        }
+
+        .sip-path-text {
+            font-family: var(--font-mono, monospace);
+            font-size: 0.78rem;
+            color: var(--color-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sip-error {
+            margin: 0.75rem 1.25rem 0;
+            padding: 0.6rem 0.85rem;
+            border-radius: 8px;
+            background: rgba(248, 113, 113, 0.12);
+            border: 1px solid rgba(248, 113, 113, 0.3);
+            color: #fca5a5;
+            font-size: 0.84rem;
+            line-height: 1.5;
+        }
+
+        .sip-actions {
+            display: flex;
+            gap: 0.75rem;
+            padding: 1.25rem;
             justify-content: flex-end;
+        }
+
+        .sip-btn-cancel {
+            padding: 0.65rem 1.25rem;
+            border-radius: 8px;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: transparent;
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+            font-weight: 600;
+            font-family: inherit;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+
+        .sip-btn-cancel:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--color-text-primary);
+        }
+
+        .sip-btn-install {
+            padding: 0.65rem 1.5rem;
+            border-radius: 8px;
+            border: none;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+            color: #fff;
+            font-size: 0.9rem;
+            font-weight: 700;
+            font-family: inherit;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            box-shadow: 0 4px 16px rgba(59, 130, 246, 0.35);
+            transition: opacity 0.2s, box-shadow 0.2s;
+        }
+
+        .sip-btn-install:hover:not(:disabled) {
+            opacity: 0.9;
+            box-shadow: 0 6px 24px rgba(59, 130, 246, 0.50);
+        }
+
+        .sip-btn-install:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .sip-btn-install .material-symbols-outlined { font-size: 1rem; }
+
+        .sip-btn-spinner {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
         }
 
         @media (max-width: 720px) {

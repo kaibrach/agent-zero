@@ -8,10 +8,10 @@
       "target": "es2022",
       "baseUrl": ".",
       "paths": {
-        "*": ["webui/*"],
+        "*": ["webui-nova/*"],
         "/plugins/*": ["plugins/*"],
         "/usr/plugins/*": ["usr/plugins/*"]
       }
     },
-    "include": ["webui/**/*.js", "extensions/**/*.js", "plugins/**/*.js", "usr/plugins/**/*.js"]
+    "include": ["webui-nova/**/*.js", "extensions/**/*.js", "plugins/**/*.js", "usr/plugins/**/*.js"]
   }
