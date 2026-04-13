@@ -12,6 +12,9 @@ const POPULAR_SKILL_MIN_STARS = 5;
 const REGISTRY_SECTIONS = ["trending", "top", "hot"];
 const REGISTRY_DISCOVERY_QUERIES = ["api", "frontend", "backend", "testing", "devops", "react", "excel", "git", "design", "data"];
 
+const SKILLS_HUB_API = "/plugins/_skills_hub/skills_hub_api";
+const SKILLS_API = "/skills";
+
 function stripMarkdownFrontmatter(markdown) {
   let value = String(markdown || "").replace(/^\uFEFF/, "").trimStart();
 
@@ -358,7 +361,7 @@ const model = {
   },
 
   async fetchRegistrySource(source) {
-    const response = await fetchApi("/skills", {
+    const response = await fetchApi(SKILLS_HUB_API, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -687,7 +690,7 @@ const model = {
     this.detailTab = "source";
     openModal(this.detailModalPath || "/plugins/_skills_hub/webui/detail.html");
     try {
-      const response = await fetchApi("/skills", {
+      const response = await fetchApi(SKILLS_HUB_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -727,7 +730,7 @@ const model = {
     this.skillTree = "";
     this.skillTreeLoading = true;
     try {
-      const response = await fetchApi("/skills", {
+      const response = await fetchApi(SKILLS_HUB_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ action: "skill_tree", skill_path: skillPath }),
@@ -853,7 +856,7 @@ const model = {
     try {
       this.busyKey = busyKey;
       this.installError = "";
-      const response = await fetchApi("/skills", {
+      const response = await fetchApi(SKILLS_HUB_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -893,7 +896,7 @@ const model = {
     const busyKey = `update:${targetSkill.path}`;
     try {
       this.busyKey = busyKey;
-      const response = await fetchApi("/skills", {
+      const response = await fetchApi(SKILLS_HUB_API, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
